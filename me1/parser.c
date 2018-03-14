@@ -157,11 +157,11 @@ int lex() {
                 addChar();
                 getChar();
             }
-            if (strcmp(lexeme, "True")) {
+            if (strcmp(lexeme, "True") == 0) {
                 nextToken = _TRUE;
-            } else if (strcmp(lexeme, "False")) {
+            } else if (strcmp(lexeme, "False") == 0) {
                 nextToken = _FALSE;
-            } else if (strcmp(lexeme, "None")) {
+            } else if (strcmp(lexeme, "None") == 0) {
                 nextToken = _NONE;
             } else {
                 nextToken = IDENT;
