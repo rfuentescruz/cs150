@@ -1,5 +1,7 @@
-#include <stdio.h>
 #include <ctype.h>
+#include <stdio.h>
+#include <string.h>
+
 /* Global declarations */
 /* Variables */
 int charClass;
@@ -23,6 +25,9 @@ int lex();
 /* Token codes */
 #define INT_LIT 10
 #define IDENT 11
+#define _TRUE 12
+#define _FALSE 13
+#define _NONE 14
 #define ASSIGN_OP 20
 #define ADD_OP 21
 #define SUB_OP 22
@@ -135,7 +140,15 @@ int lex() {
                 addChar();
                 getChar();
             }
-            nextToken = IDENT;
+            if (strcmp(lexeme, "True")) {
+                nextToken = _TRUE;
+            } else if (strcmp(lexeme, "False")) {
+                nextToken = _FALSE;
+            } else if (strcmp(lexeme, "None")) {
+                nextToken = _NONE;
+            } else {
+                nextToken = IDENT;
+            }
             break;
         /* Parse integer literals */
         case DIGIT:
