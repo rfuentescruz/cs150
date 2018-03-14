@@ -1,0 +1,135 @@
+Next token is: 12, Next lexeme is True
+Enter <or_test>
+Enter <and_test>
+Enter <not_test>
+Enter <comparison>
+Enter <expr>
+Enter <xor_expr>
+Enter <and_expr>
+Enter <shift_expr>
+Enter <arith_expr>
+Enter <term>
+Enter <factor>
+Enter <power>
+Enter <atom>
+Next token is: 21, Next lexeme is +
+Exit <atom>
+Exit <power>
+Exit <factor>
+Exit <term>
+Next token is: 11, Next lexeme is a
+Enter <term>
+Enter <factor>
+Enter <power>
+Enter <atom>
+Next token is: 21, Next lexeme is +
+Exit <atom>
+Exit <power>
+Exit <factor>
+Exit <term>
+Next token is: 11, Next lexeme is Falsea
+Enter <term>
+Enter <factor>
+Enter <power>
+Enter <atom>
+Next token is: 41, Next lexeme is <=
+Exit <atom>
+Exit <power>
+Exit <factor>
+Exit <term>
+Exit <arith_expr>
+Exit <shift_expr>
+Exit <and_expr>
+Exit <xor_expr>
+Exit <expr>
+Next token is: 11, Next lexeme is B
+Enter <expr>
+Enter <xor_expr>
+Enter <and_expr>
+Enter <shift_expr>
+Enter <arith_expr>
+Enter <term>
+Enter <factor>
+Enter <power>
+Enter <atom>
+Next token is: 21, Next lexeme is +
+Exit <atom>
+Exit <power>
+Exit <factor>
+Exit <term>
+Next token is: 25, Next lexeme is (
+Enter <term>
+Enter <factor>
+Enter <power>
+Enter <atom>
+Next token is: 26, Next lexeme is )
+Enter <or_test>
+Enter <and_test>
+Enter <not_test>
+Enter <comparison>
+Enter <expr>
+Enter <xor_expr>
+Enter <and_expr>
+Enter <shift_expr>
+Enter <arith_expr>
+Enter <term>
+Enter <factor>
+Enter <power>
+Enter <atom>
+SYNTAX ERROR: Unexpected token: Expected atom (Name, Number, True, False, None, or LEFT_PAREN), got: )
+Exit <atom>
+Exit <power>
+Exit <factor>
+Exit <term>
+Exit <arith_expr>
+Exit <shift_expr>
+Exit <and_expr>
+Exit <xor_expr>
+Exit <expr>
+Exit <comparison>
+Exit <not_test>
+Exit <and_test>
+Exit <or_test>
+Next token is: 14, Next lexeme is None
+Exit <atom>
+Exit <power>
+Exit <factor>
+Exit <term>
+Exit <arith_expr>
+Exit <shift_expr>
+Exit <and_expr>
+Exit <xor_expr>
+Exit <expr>
+Exit <comparison>
+Exit <not_test>
+Exit <and_test>
+Exit <or_test>
+Next token is: -1, Next lexeme is EOF
+Enter <or_test>
+Enter <and_test>
+Enter <not_test>
+Enter <comparison>
+Enter <expr>
+Enter <xor_expr>
+Enter <and_expr>
+Enter <shift_expr>
+Enter <arith_expr>
+Enter <term>
+Enter <factor>
+Enter <power>
+Enter <atom>
+SYNTAX ERROR: Unexpected token: Expected atom (Name, Number, True, False, None, or LEFT_PAREN), got: EOF
+Exit <atom>
+Exit <power>
+Exit <factor>
+Exit <term>
+Exit <arith_expr>
+Exit <shift_expr>
+Exit <and_expr>
+Exit <xor_expr>
+Exit <expr>
+Exit <comparison>
+Exit <not_test>
+Exit <and_test>
+Exit <or_test>
+Total number of errors encountered: 2
