@@ -5,6 +5,7 @@
 /* Global declarations */
 /* Variables */
 int charClass;
+int prevClass;
 char lexeme[100];
 char nextChar;
 int lexLen;
@@ -14,6 +15,7 @@ FILE *in_fp, *fopen();
 
 void addChar();
 void getChar();
+void ungetChar();
 void getNonBlank();
 int lex();
 
@@ -115,6 +117,15 @@ void getChar() {
     } else {
         charClass = EOF;
     }
+    prevClass = charClass;
+}
+
+/*****************************************************/
+/* ungetChar - a function to push the most recent character fetched by getChar
+back to the input stream */
+void ungetChar() {
+    ungetc(nextChar, in_fp);
+    charClass = prevClass;
 }
 
 /*****************************************************/
