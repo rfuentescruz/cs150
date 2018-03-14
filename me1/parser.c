@@ -38,6 +38,28 @@ int lex();
 #define DIV_OP 24
 #define LEFT_PAREN 25
 #define RIGHT_PAREN 26
+#define MATMUL_OP 27
+#define MOD_OP 28
+#define FDIV_OP 29
+#define EXP_OP 30
+
+#define LT_OP 40
+#define LTEQ_OP 41
+#define GT_OP 42
+#define GTEQ_OP 43
+#define EQ_OP 44
+#define NEQ_OP 45
+
+#define OR_OP 50
+#define AND_OP 51
+#define NOT_OP 52
+
+#define BOR_OP 60
+#define BAND_OP 61
+#define BXOR_OP 62
+#define BNOT_OP 63
+#define BLSHIFT_OP 64
+#define BRSHIFT_OP 65
 
 #define UNRECOGNIZED -2
 
@@ -84,10 +106,102 @@ int lookup(char ch) {
         case '*':
             addChar();
             nextToken = MULT_OP;
+
+            getChar();
+            if (nextChar == '*') {
+                addChar();
+                nextToken = EXP_OP;
+            } else {
+                ungetChar();
+            }
             break;
         case '/':
             addChar();
             nextToken = DIV_OP;
+
+            getChar();
+            if (nextChar == '/') {
+                addChar();
+                nextToken = FDIV_OP;
+            } else {
+                ungetChar();
+            }
+            break;
+        case '@':
+            addChar();
+            nextToken = MATMUL_OP;
+            break;
+        case '%':
+            addChar();
+            nextToken = MOD_OP;
+            break;
+        case '<':
+            addChar();
+            nextToken = LT_OP;
+
+            getChar();
+            if (nextChar == '=') {
+                addChar();
+                nextToken = LTEQ_OP;
+            } else if (nextChar == '<') {
+                addChar();
+                nextToken = BLSHIFT_OP;
+            } else {
+                ungetChar();
+            }
+            break;
+        case '>':
+            addChar();
+            nextToken = GT_OP;
+
+            getChar();
+            if (nextChar == '=') {
+                addChar();
+                nextToken = GTEQ_OP;
+            } else if (nextChar == '>') {
+                addChar();
+                nextToken = BRSHIFT_OP;
+            } else {
+                ungetChar();
+            }
+            break;
+        case '=':
+            addChar();
+            getChar();
+            if (nextChar == '=') {
+                addChar();
+                nextToken = EQ_OP;
+            } else {
+                ungetChar();
+                nextToken = UNRECOGNIZED;
+            }
+            break;
+        case '!':
+            addChar();
+            getChar();
+            if (nextChar == '=') {
+                addChar();
+                nextToken = NEQ_OP;
+            } else {
+                ungetChar();
+                nextToken = UNRECOGNIZED;
+            }
+            break;
+        case '|':
+            addChar();
+            nextToken = BOR_OP;
+            break;
+        case '&':
+            addChar();
+            nextToken = BAND_OP;
+            break;
+        case '^':
+            addChar();
+            nextToken = BXOR_OP;
+            break;
+        case '~':
+            addChar();
+            nextToken = BNOT_OP;
             break;
         default:
             addChar();
@@ -157,12 +271,19 @@ int lex() {
                 addChar();
                 getChar();
             }
+
             if (strcmp(lexeme, "True") == 0) {
                 nextToken = _TRUE;
             } else if (strcmp(lexeme, "False") == 0) {
                 nextToken = _FALSE;
             } else if (strcmp(lexeme, "None") == 0) {
                 nextToken = _NONE;
+            } else if (strcmp(lexeme, "or") == 0) {
+                nextToken = OR_OP;
+            } else if (strcmp(lexeme, "and") == 0) {
+                nextToken = AND_OP;
+            } else if (strcmp(lexeme, "not") == 0) {
+                nextToken = NOT_OP;
             } else {
                 nextToken = IDENT;
             }
