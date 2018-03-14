@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -11,6 +12,7 @@ char nextChar;
 int lexLen;
 int token;
 int nextToken;
+int errors = 0;
 FILE *in_fp, *fopen();
 
 void addChar();
@@ -18,6 +20,21 @@ void getChar();
 void ungetChar();
 void getNonBlank();
 int lex();
+
+void or_test();
+void and_test();
+void not_test();
+void comparison();
+void comp_op();
+void expr();
+void xor_expr();
+void and_expr();
+void shift_expr();
+void arith_expr();
+void term();
+void factor();
+void power();
+void atom();
 
 /* Character classes */
 #define LETTER 0
@@ -74,10 +91,14 @@ int main(int argc, char *argv[]) {
         getChar();
         do {
             lex();
-            if (nextToken == UNRECOGNIZED) {
-                printf("LEXICAL ERROR: Unrecognized symbol: %s\n", lexeme);
-            }
+            or_test();
         } while (nextToken != EOF);
+    }
+
+    if (errors) {
+        printf("Total number of errors encountered: %d\n", errors);
+    } else {
+        printf("Parsing successful! No errors encountered.\n");
     }
 }
 
@@ -218,7 +239,8 @@ void addChar() {
         lexeme[lexLen++] = nextChar;
         lexeme[lexLen] = 0;
     } else {
-        printf("Error - lexeme is too long \n");
+        errors++;
+        printf("LEXICAL ERROR: Lexeme is too long \n");
     }
 }
 
@@ -317,5 +339,179 @@ int lex() {
         nextToken,
         lexeme
     );
+
+    if (nextToken == UNRECOGNIZED) {
+        errors++;
+        printf("LEXICAL ERROR: Unrecognized symbol: %s\n", lexeme);
+    }
     return nextToken;
 } /* End of function lex */
+
+void or_test() {
+    printf("Enter <or_test>\n");
+    and_test();
+
+    while (nextToken == OR_OP) {
+        lex();
+        and_test();
+    }
+    printf("Exit <or_test>\n");
+}
+
+void and_test() {
+    printf("Enter <and_test>\n");
+    not_test();
+
+    while (nextToken == AND_OP) {
+        lex();
+        not_test();
+    }
+    printf("Exit <and_test>\n");
+}
+
+void not_test() {
+    printf("Enter <not_test>\n");
+    if (nextToken == NOT_OP) {
+        lex();
+        not_test();
+    } else {
+        comparison();
+    }
+    printf("Exit <not_test>\n");
+}
+
+void comparison() {
+    printf("Enter <comparison>\n");
+    expr();
+
+    while (
+        nextToken == LT_OP ||
+        nextToken == LTEQ_OP ||
+        nextToken == GTEQ_OP ||
+        nextToken == EQ_OP ||
+        nextToken == NEQ_OP
+    ) {
+        lex();
+        expr();
+    }
+    printf("Exit <comparison>\n");
+}
+
+void expr() {
+    printf("Enter <expr>\n");
+    xor_expr();
+
+    while (nextToken == BXOR_OP) {
+        lex();
+        xor_expr();
+    }
+
+    printf("Exit <expr>\n");
+}
+
+void xor_expr() {
+    printf("Enter <xor_expr>\n");
+    and_expr();
+    while (nextToken == BXOR_OP) {
+        lex();
+        and_expr();
+    }
+    printf("Exit <xor_expr>\n");
+}
+
+void and_expr() {
+    printf("Enter <and_expr>\n");
+    shift_expr();
+    while (nextToken == BAND_OP) {
+        lex();
+        shift_expr();
+    }
+    printf("Exit <and_expr>\n");
+}
+
+void shift_expr() {
+    printf("Enter <shift_expr>\n");
+    arith_expr();
+    while (nextToken == BLSHIFT_OP || nextToken == BRSHIFT_OP) {
+        lex();
+        arith_expr();
+    }
+    printf("Exit <shift_expr>\n");
+}
+
+void arith_expr() {
+    printf("Enter <arith_expr>\n");
+    term();
+    while (nextToken == ADD_OP || nextToken == SUB_OP) {
+        lex();
+        term();
+    }
+    printf("Exit <arith_expr>\n");
+}
+
+void term() {
+    printf("Enter <term>\n");
+    factor();
+    while (
+        nextToken == MULT_OP ||
+        nextToken == MATMUL_OP ||
+        nextToken == DIV_OP ||
+        nextToken == MOD_OP ||
+        nextToken == FDIV_OP
+    ) {
+        lex();
+        factor();
+    }
+    printf("Exit <term>\n");
+}
+
+void factor() {
+    printf("Enter <factor>\n");
+    if (
+        nextToken == ADD_OP ||
+        nextToken == SUB_OP ||
+        nextToken == BNOT_OP
+    ) {
+        lex();
+        factor();
+    } else {
+        power();
+    }
+    printf("Exit <factor>\n");
+}
+
+void power() {
+    printf("Enter <power>\n");
+    atom();
+    if (nextToken == EXP_OP) {
+        lex();
+        factor();
+    }
+    printf("Exit <power>\n");
+}
+
+void atom() {
+    printf("Enter <atom>\n");
+    if (
+        nextToken == IDENT ||
+        nextToken == INT_LIT ||
+        nextToken == _NONE ||
+        nextToken == _TRUE ||
+        nextToken == _FALSE
+    ) {
+        lex();
+    } else if (nextToken == LEFT_PAREN) {
+        lex();
+        or_test();
+        if (nextToken == RIGHT_PAREN) {
+            lex();
+        }
+    } else {
+        errors++;
+        printf(
+            "SYNTAX ERROR: Unexpected token: Expected atom (Name, Number, True, False, None, or LEFT_PAREN), got: %s\n",
+            lexeme
+        );
+    }
+    printf("Exit <atom>\n");
+}
