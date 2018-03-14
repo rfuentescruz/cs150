@@ -30,6 +30,7 @@ int lex();
 #define _TRUE 12
 #define _FALSE 13
 #define _NONE 14
+
 #define ASSIGN_OP 20
 #define ADD_OP 21
 #define SUB_OP 22
@@ -37,6 +38,8 @@ int lex();
 #define DIV_OP 24
 #define LEFT_PAREN 25
 #define RIGHT_PAREN 26
+
+#define UNRECOGNIZED -2
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -49,6 +52,9 @@ int main(int argc, char *argv[]) {
         getChar();
         do {
             lex();
+            if (nextToken == UNRECOGNIZED) {
+                printf("LEXICAL ERROR: Unrecognized symbol: %s\n", lexeme);
+            }
         } while (nextToken != EOF);
     }
 }
@@ -85,7 +91,7 @@ int lookup(char ch) {
             break;
         default:
             addChar();
-            nextToken = EOF;
+            nextToken = UNRECOGNIZED;
             break;
     }
     return nextToken;
