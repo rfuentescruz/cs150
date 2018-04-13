@@ -8,10 +8,10 @@ factorial :: (Integral a) => a -> a
 factorial n = foldl (*) 1 [1..n]
 
 term :: (Floating a, Integral b) => a -> b -> a
-term x y = (x ^^ y) / factorial y
+term x y = (x ^^ y) / fromIntegral(factorial y)
 
-sin_m :: (Enum a, Floating a) => a -> [a]
-sin_m x = [sign * (term x exp) | (exp, sign) <- zip [1,3..] (cycle [1, -1])]
+series :: (Floating a) => a -> [a]
+series x = [sign * (term x exp) | (exp, sign) <- zip [1,3..] (cycle [1, -1])]
 
-sin' :: (Enum a, Floating a) => a -> a
-sin' x = foldl (+) 0 (take 30 (sin_m x))
+sin' :: (Floating a) => a -> a
+sin' x = foldl (+) 0 (take 30 (series x))
