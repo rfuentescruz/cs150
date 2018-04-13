@@ -16,6 +16,17 @@ series x = zipWith (*) ([term x exp | exp <- [1,3..]]) (cycle [1, -1])
 sin' :: (Floating a) => a -> a
 sin' x = foldl (+) 0 (take 30 (series x))
 
+maclaurin :: (Floating a, Ord a) => [a] -> a -> a
+maclaurin [] _ = 0
+maclaurin [n] _ = n
+maclaurin (x:xs) threshold
+    | diff > threshold = x + (maclaurin xs threshold)
+    | otherwise        = x
+    where diff = abs (x - head xs)
+
+sin'' :: (Floating a, Ord a) => a -> a -> a
+sin'' x tolerance = maclaurin (series x) tolerance
+
 test :: (Num a) => a -> a
 test x = (2 * x ^ 2) + (5 * x) + 12
 
@@ -23,3 +34,4 @@ main = do
   print(simpsons test 1 3)
   print(trapezoidal test 1 3)
   print(sin' (3 * pi / 2))
+  print(sin'' (pi / 2) 0.0000000000000000001)
