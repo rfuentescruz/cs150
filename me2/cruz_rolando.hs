@@ -12,7 +12,9 @@ sin_foldl x = foldl (+) 0 (take 30 (series x))
 
 -- | Approximate sin(x) by recursively computing the sum of its Maclaurin series
 sin_recursive :: (Floating a, Ord a) => a -> a -> a
-sin_recursive x tolerance = maclaurin (series x) tolerance
+sin_recursive x tolerance
+  | tolerance <= 0 = error "Tolerance must be greater than 0"
+  | otherwise = maclaurin (series x) tolerance
 
 --------------------------- MISC FUNCTIONS ---------------------------
 
