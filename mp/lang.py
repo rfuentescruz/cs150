@@ -6,15 +6,30 @@ from ply import lex, yacc
 
 from ast import *
 
-RESERVED = {
-    'while': 'WHILE'
+reserved = {
+    'while': 'WHILE',
+    'print': 'PRINT',
 }
 
 tokens = [
-    'FLOAT', 'INTEGER', 'NAME', 'NEWLINE', 'PRINT', 'STRING'
-] + list(RESERVED.values())
+    'TRUE', 'FALSE',
+    'FLOAT', 'INTEGER',
+    'NAME', 'STRING',
+    'NEWLINE',
+    'OP_EQ', 'OP_NEQ', 'OP_GTEQ', 'OP_LTEQ',
+] + list(reserved.values())
 
-literals = ['=', '[', ']', ',', ';']
+literals = [
+    '=', '[', ']', ',', ';', '+', '-', '*', '/', '%', '^', '>', '<', '!'
+]
+
+precedence = (
+    ('left',  'OP_EQ', 'OP_NEQ'),
+    ('left', '>', '<', 'OP_GTEQ', 'OP_LTEQ'),
+    ('left', '+', '-'),
+    ('left', '*', '/', '%'),
+    ('right', '^'),
+)
 
 source = ''
 
@@ -35,12 +50,25 @@ def t_STRING(t):
     t.value = t.value[1:-1].decode("string-escape")
     return t
 
+t_OP_EQ = '=='
+t_OP_NEQ = '!='
+t_OP_GTEQ = '>='
+t_OP_LTEQ = '<='
 
-def t_PRINT(t):
-    r'print '
+def t_TRUE(t):
+    r'True'
+    t.value = True
     return t
 
-t_NAME = r'[a-zA-Z_][a-zA-Z0-9_]*'
+def t_FALSE(t):
+    r'False'
+    t.value = False
+    return t
+
+def t_NAME(t):
+    r'[a-zA-Z_][a-zA-Z0-9_]*'
+    t.type = reserved.get(t.value, 'NAME')
+    return t
 
 def t_NEWLINE(t):
     r'\n+'
@@ -110,6 +138,28 @@ def p_expression_atom(p):
         p[0] = p[1]
 
 @track
+def p_expression_arithmetic(p):
+    '''expression : expression "+" expression
+                  | expression "-" expression
+                  | expression "/" expression
+                  | expression "*" expression
+                  | expression "%" expression
+                  | expression "^" expression
+    '''
+    p[0] = ArithmeticOp(left=p[1], right=p[3], op=p[2])
+
+@track
+def p_expression_comparison(p):
+    '''expression : expression OP_EQ expression
+                  | expression OP_NEQ expression
+                  | expression OP_GTEQ expression
+                  | expression OP_LTEQ expression
+                  | expression ">" expression
+                  | expression "<" expression
+    '''
+    p[0] = ComparisonOp(left=p[1], right=p[3], op=p[2])
+
+@track
 def p_atom_list(p):
     '''atom_list : atom
                  | atom_list ',' atom'''
@@ -128,7 +178,9 @@ def p_atom_name(p):
 def p_atom_number(p):
     '''atom : FLOAT
             | INTEGER
-            | STRING'''
+            | STRING
+            | TRUE
+            | FALSE'''
     p[0] = Literal(value=p[1])
 
 
@@ -157,11 +209,10 @@ def print_error(error, message, line_number, pos):
 
 yacc.yacc()
 source = '''a = 1;
-b = 2.0!@#$!;
-
-c = [1, 2, 3, "abc", b];
-print [1,2,3,4][1];
-d = e;
+b = 3 * 4 + 5;
+print b;
+b = False == True;
+print b;
 '''
 
 try:
@@ -172,3 +223,5 @@ except SyntaxError as error:
     print_error("Syntax error", error.message, error.line_number, error.pos)
 except ParseError as error:
     print_error("Parse error", error.message, error.line_number, error.pos)
+except RuntimeError as error:
+    print_error("Runtime error", error.message, error.line_number, error.pos)

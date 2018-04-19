@@ -1,3 +1,6 @@
+from __future__ import division
+
+
 class ParseError(Exception):
     def __init__(self, token):
         self.token = token
@@ -36,6 +39,22 @@ class LookupError(LexicalError):
         self.name = name
         super(LookupError, self).__init__(*args, **kwargs)
         self.message = 'Undefined name: %s' % name
+
+
+class RuntimeError(Exception):
+    def __init__(self, node, index=1, message=None, *args, **kwargs):
+        super(RuntimeError, self).__init__(*args, **kwargs)
+        self.node = node
+        self.index = index
+        self.message = message if message else 'Unexpected error'
+
+    @property
+    def line_number(self):
+        return self.node.p.lineno(self.index)
+
+    @property
+    def pos(self):
+        return self.node.p.lexpos(self.index)
 
 
 class Scope(object):
@@ -188,3 +207,104 @@ class Index(Expression):
             )
 
         return target[index]
+
+
+class BinaryOp(Expression):
+    OPERATORS = []
+
+    def __init__(self, left, right, op, *args, **kwargs):
+        super(BinaryOp, self).__init__(*args, **kwargs)
+        if not isinstance(left, Expression):
+            raise LexicalError(
+                p=self.p,
+                message='Invalid left operand. Expected an %s' % Expression.__class__,
+                index=1
+            )
+
+        if not isinstance(right, Expression):
+            raise LexicalError(
+                p=self.p,
+                message='Invalid right operand. Expected an %s' % Expression.__class__,
+                index=3
+            )
+
+        if op not in self.OPERATORS:
+            raise LexicalError(
+                p=self.p,
+                message='Invalid operator: "%s". Supported operators are %s' % (
+                    op, self.OPERATORS),
+                index=2
+            )
+
+        self.left = left
+        self.right = right
+        self.op = op
+
+
+class ArithmeticOp(BinaryOp):
+    OPERATORS = ['+', '-', '/', '//', '*', '%', '^']
+
+    def evaluate(self):
+        l = self.left.evaluate()
+        r = self.right.evaluate()
+
+        if not isinstance(l, (int, float)) and self.op != '+':
+            raise RuntimeError(
+                node=self.left,
+                message='Unsupported operation "%s" for type' % self.op
+            )
+
+        try:
+            if self.op == '+':
+                return l + r
+            elif self.op == '-':
+                return l - r
+            elif self.op == '*':
+                return l * r
+            elif self.op == '/':
+                return l / r
+            elif self.op == '//':
+                return l // r
+            elif self.op == '%':
+                return l % r
+            elif self.op == '^':
+                return l ** r
+        except (TypeError, ArithmeticError) as e:
+            raise RuntimeError(
+                node=self.left,
+                message='Unable to evaluate operation "%s"' % self.op
+            )
+
+
+class ComparisonOp(BinaryOp):
+    OPERATORS = ['==', '!=', '<', '>', '<=', '>=']
+
+    def evaluate(self):
+        l = self.left.evaluate()
+        r = self.right.evaluate()
+
+        if not isinstance(l, type(r)):
+            raise RuntimeError(
+                node=self.left,
+                message='Unable to compare non-matching types'
+            )
+
+        if self.op not in ['==', '!=']:
+            if isinstance(l, list) or isinstance(r, list):
+                raise RuntimeError(
+                    node=self.left,
+                    message='Unsupported operation "%s" for type' % self.op
+                )
+
+        if self.op == '==':
+            return l == r
+        elif self.op == '!=':
+            return l != r
+        elif self.op == '>':
+            return l > r
+        elif self.op == '<':
+            return l < r
+        elif self.op == '<=':
+            return l <= r
+        elif self.op == '>=':
+            return l >= r
