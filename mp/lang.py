@@ -9,6 +9,8 @@ from ast import *
 reserved = {
     'while': 'WHILE',
     'print': 'PRINT',
+    'and': 'OP_AND',
+    'or': 'OP_OR',
 }
 
 tokens = [
@@ -20,10 +22,12 @@ tokens = [
 ] + list(reserved.values())
 
 literals = [
-    '=', '[', ']', ',', ';', '+', '-', '*', '/', '%', '^', '>', '<', '!'
+    '=', '[', ']', ',', ';', '(', ')',
+    '+', '-', '*', '/', '%', '^', '>', '<', '!'
 ]
 
 precedence = (
+    ('left',  'OP_AND', 'OP_OR'),
     ('left',  'OP_EQ', 'OP_NEQ'),
     ('left', '>', '<', 'OP_GTEQ', 'OP_LTEQ'),
     ('left', '+', '-'),
@@ -159,6 +163,18 @@ def p_expression_comparison(p):
     '''
     p[0] = ComparisonOp(left=p[1], right=p[3], op=p[2])
 
+
+def p_expression_logical(p):
+    '''expression : expression OP_AND expression
+                  | expression OP_OR expression
+    '''
+    p[0] = LogicalOp(left=p[1], right=p[3], op=p[2])
+
+
+def p_expression_group(p):
+    'expression : "(" expression ")"'
+    p[0] = p[2]
+
 @track
 def p_atom_list(p):
     '''atom_list : atom
@@ -209,9 +225,9 @@ def print_error(error, message, line_number, pos):
 
 yacc.yacc()
 source = '''a = 1;
-b = 3 * 4 + 5;
+b = 4 ^ 3 ^ 2;
 print b;
-b = False == True;
+b = ("a" == "b") and (1 == 1);
 print b;
 '''
 

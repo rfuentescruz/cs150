@@ -308,3 +308,16 @@ class ComparisonOp(BinaryOp):
             return l <= r
         elif self.op == '>=':
             return l >= r
+
+
+class LogicalOp(BinaryOp):
+    OPERATORS = ['and', 'or']
+
+    def evaluate(self):
+        l = self.left.evaluate()
+        r = self.right.evaluate()
+
+        if self.op == 'and':
+            return l and r
+        elif self.op == 'or':
+            return l or r
