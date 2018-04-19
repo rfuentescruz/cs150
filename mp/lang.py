@@ -49,7 +49,13 @@ def t_NEWLINE(t):
 t_ignore = ' \t'
 
 def t_error(t):
-    raise ParseError(token=t)
+    print_error(
+        "Parse error",
+        "Unrecognized character: %s" % t.value[0],
+        t.lineno,
+        t.lexpos
+    )
+    t.lexer.skip(1)
 
 lexer = lex.lex()
 
@@ -151,7 +157,7 @@ def print_error(error, message, line_number, pos):
 
 yacc.yacc()
 source = '''a = 1;
-b = 2.0;
+b = 2.0!@#$!;
 
 c = [1, 2, 3, "abc", b];
 print [1,2,3,4][1];
