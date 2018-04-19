@@ -9,7 +9,7 @@ RESERVED = {
 }
 
 tokens = [
-    'FLOAT', 'INTEGER', 'NAME', 'PRINT', 'STRING'
+    'FLOAT', 'INTEGER', 'NAME', 'NEWLINE', 'PRINT', 'STRING'
 ] + list(RESERVED.values())
 
 literals = ['=', '[', ']', ',', ';']
@@ -40,7 +40,11 @@ def t_PRINT(t):
 
 t_NAME = r'[a-zA-Z_][a-zA-Z0-9_]*'
 
-t_ignore = ' \t\n'
+def t_NEWLINE(t):
+    r'\n+'
+    t.lexer.lineno += t.value.count("\n")
+
+t_ignore = ' \t'
 
 def t_error(t):
     print("Illegal character '%s'" % t.value[0])
