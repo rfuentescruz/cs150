@@ -1,15 +1,42 @@
-class LexicalError(Exception):
-    def __init__(self, node):
-        self.node = node
+class ParseError(Exception):
+    def __init__(self, token):
+        self.token = token
+        self.message = 'Unrecognized character: %s' % token.value[0]
 
+    @property
+    def line_number(self):
+        return self.token.lineno
+
+    @property
+    def pos(self):
+        return self.token.lexpos
+
+class SyntaxError(ParseError):
+    def __init__(self, token):
+        self.token = token
+        self.message = 'Unexpected token: %s' % token.type
+
+
+class LexicalError(Exception):
+    def __init__(self, p=None, index=1, message=None):
+        self.p = p
+        self.error_index = index
+        self.message = message if message else 'Invalid expression / statement'
+
+    @property
+    def line_number(self):
+        return self.p.lineno(self.error_index)
+
+    @property
+    def pos(self):
+        return self.p.lexpos(self.error_index)
 
 class LookupError(LexicalError):
-    def __init__(self, node, name):
-        self.node = node
+    def __init__(self, name, *args, **kwargs):
         self.name = name
+        super(LookupError, self).__init__(*args, **kwargs)
+        self.message = 'Undefined name: %s' % name
 
-    def __str__(self):
-        return 'Undefined name: %s' % self.name
 
 class Scope(object):
     def __init__(self, parent=None):
@@ -23,7 +50,7 @@ class Scope(object):
             if self.parent is not None:
                 return self.parent[name]
             else:
-                raise LookupError(node=None, name=name)
+                raise LookupError(name=name)
 
     def __setitem__(self, name, value):
         self.names[name] = value
@@ -33,13 +60,12 @@ root_scope = Scope()
 
 
 class Node(object):
-    def __init__(
-        self,
-        line=None, children=None, parent=None, scope=None
-    ):
-        self.line = line
+    def __init__(self, p=None, children=None, parent=None, scope=None):
+        self.p = p
+
         self.children = children if children else []
         self.parent = parent
+
         self.scope = scope if scope else root_scope
 
     def add_child(self, child):
@@ -61,7 +87,10 @@ class StatementList(Node):
     def execute(self):
         for stmt in self.children:
             if not isinstance(stmt, Statement):
-                raise LexicalError(node=self)
+                raise LexicalError(
+                    p=self.p,
+                    message='Expected a statement, got %s' % (stmt.__class__)
+                )
             stmt.execute()
 
 
@@ -70,7 +99,11 @@ class Assign(Statement):
         super(Assign, self).__init__(*args, **kwargs)
         self.name = name
         if not isinstance(expr, Expression):
-            raise LexicalError(node=self)
+            raise LexicalError(
+                p=self.p,
+                message='Expected an expression , got %s' % (stmt.__class__),
+                index=3
+            )
 
         self.expr = expr
 
@@ -81,6 +114,13 @@ class Assign(Statement):
 class Print(Statement):
     def __init__(self, expr, *args, **kwargs):
         super(Print, self).__init__(*args, **kwargs)
+        if not isinstance(expr, Expression):
+            raise LexicalError(
+                p=self.p,
+                message='Unable to evaluate and print expression',
+                index=2
+            )
+
         self.expr = expr
 
     def execute(self):
@@ -93,7 +133,11 @@ class Lookup(Expression):
         self.name = name
 
     def evaluate(self):
-        return self.scope[self.name]
+        try:
+            return self.scope[self.name]
+        except LookupError as e:
+            e.p = self.p
+            raise
 
 
 class Literal(Expression):
@@ -118,19 +162,29 @@ class Index(Expression):
     def __init__(self, target, index, *args, **kwargs):
         super(Index, self).__init__(*args, **kwargs)
         if not isinstance(index, Expression):
-            raise LexicalError(node=self)
-
+            raise LexicalError(
+                p=self.p,
+                message='Invalid index expression',
+                index=1
+            )
         self.target = target
         self.index = index
 
     def evaluate(self):
         target = self.target.evaluate()
         if not isinstance(target, (str, list)):
-            raise LexicalError(node=self)
+            raise LexicalError(
+                p=self.p,
+                message='Invalid index target',
+                index=1
+            )
 
         index = self.index.evaluate()
-
         if not isinstance(index, int):
-            raise LexicalError(node=self)
+            raise LexicalError(
+                p=self.p,
+                message='Invalid index expression',
+                index=3
+            )
 
         return target[index]

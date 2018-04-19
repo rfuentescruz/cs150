@@ -1,3 +1,5 @@
+from copy import copy
+import functools
 import sys
 
 from ply import lex, yacc
@@ -47,16 +49,26 @@ def t_NEWLINE(t):
 t_ignore = ' \t'
 
 def t_error(t):
-    print("Illegal character '%s'" % t.value[0])
+    raise ParseError(token=t)
 
+lexer = lex.lex()
 
-lex.lex()
+def track(f):
+    @functools.wraps(f)
+    def wrapper(p):
+        f(p)
+        if p[0] is not None and isinstance(p[0], Node):
+            p[0].p = copy(p)
 
+    wrapper.co_firstlineno = f.__code__.co_firstlineno
+    return wrapper
+
+@track
 def p_main(p):
     """main : statement_list"""
     p[1].execute()
 
-
+@track
 def p_statement_list(p):
     """statement_list : statement ";"
                       | statement_list statement ";" """
@@ -64,24 +76,25 @@ def p_statement_list(p):
         p[1].add_child(p[2])
         p[0] = p[1]
     else:
-        p[0] = StatementList(line=p.lineno(1), children=[p[1]])
+        p[0] = StatementList()
+        p[0].add_child(p[1])
 
-
+@track
 def p_statement_print(p):
     'statement : PRINT expression'
     p[0] = Print(expr=p[2])
 
-
+@track
 def p_statement_assign(p):
     'statement : NAME "=" expression'
-    p[0] = Assign(name=p[1], expr=p[3], line=p.lineno)
+    p[0] = Assign(name=p[1], expr=p[3])
 
-
+@track
 def p_expression_index(p):
     'expression : expression "[" expression "]"'
-    p[0] = Index(target=p[1], index=p[3], line=p.lineno)
+    p[0] = Index(target=p[1], index=p[3])
 
-
+@track
 def p_expression_atom(p):
     '''expression : atom
                   | "[" atom_list "]"'''
@@ -90,7 +103,7 @@ def p_expression_atom(p):
     else:
         p[0] = p[1]
 
-
+@track
 def p_atom_list(p):
     '''atom_list : atom
                  | atom_list ',' atom'''
@@ -98,41 +111,58 @@ def p_atom_list(p):
         p[1].items.append(p[3])
         p[0] = p[1]
     else:
-        p[0] = List(items=[p[1]], line=p.lineno)
+        p[0] = List(items=[p[1]])
 
-
+@track
 def p_atom_name(p):
     'atom : NAME'
     p[0] = Lookup(name=p[1])
 
-
+@track
 def p_atom_number(p):
     '''atom : FLOAT
             | INTEGER
             | STRING'''
-    p[0] = Literal(value=p[1], line=p.lineno)
+    p[0] = Literal(value=p[1])
 
 
 def p_error(p):
     if p:
-        print("Syntax error at '%s'" % p.value)
+        raise SyntaxError(token=p)
     else:
-        print("Syntax error at EOF")
+        print_error(
+            "Syntax error",
+            "Unexpected end of file",
+            source.count('\n'),
+            len(source) - 1
+        )
+
+def find_column(input, lexpos):
+    line_start = input.rfind('\n', 0, lexpos) + 1
+    return (lexpos - line_start) + 1
+
+
+def print_error(error, message, line_number, pos):
+    lines = source.split('\n')
+    print "%s at line %d: %s" % (error, line_number, message)
+    print " %s" % lines[line_number - 1]
+    print " %s^" % (" " * find_column(source, pos - 1))
 
 
 yacc.yacc()
-source = '''
+source = '''a = 1;
+b = 2.0;
 
-a = 1;
-b = 1.0;
 c = [1, 2, 3, "abc", b];
-
 print [1,2,3,4][1];
-
+d = e;
 '''
 
 try:
     yacc.parse(source, tracking=True)
-except LexicalError, e:
-    print e
-    raise
+except LexicalError as error:
+    print_error("Lexical error", error.message, error.line_number, error.pos)
+except SyntaxError as error:
+    print_error("Syntax error", error.message, error.line_number, error.pos)
+except ParseError as error:
+    print_error("Parse error", error.message, error.line_number, error.pos)
