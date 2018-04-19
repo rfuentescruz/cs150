@@ -9,11 +9,12 @@ RESERVED = {
 }
 
 tokens = [
-    'FLOAT', 'INTEGER', 'NAME', 'NEWLINE', 'PRINT', 'STRING'
+    'FLOAT', 'INTEGER', 'NAME', 'PRINT', 'STRING'
 ] + list(RESERVED.values())
 
-literals = ['=', '[', ']', ',']
+literals = ['=', '[', ']', ',', ';']
 
+source = ''
 
 def t_FLOAT(t):
     r'\d+\.\d+'
@@ -39,13 +40,7 @@ def t_PRINT(t):
 
 t_NAME = r'[a-zA-Z_][a-zA-Z0-9_]*'
 
-
-def t_NEWLINE(t):
-    r'\n+'
-    t.lexer.lineno += t.value.count("\n")
-    return t
-
-t_ignore = ' \t'
+t_ignore = ' \t\n'
 
 def t_error(t):
     print("Illegal character '%s'" % t.value[0])
@@ -54,19 +49,18 @@ def t_error(t):
 lex.lex()
 
 def p_main(p):
-    """main : statement_list
-            | statement_list NEWLINE"""
+    """main : statement_list"""
     p[1].execute()
 
 
 def p_statement_list(p):
-    """statement_list : statement
-                      | statement_list NEWLINE statement"""
-    if len(p) > 2:
-        p[1].children.append(p[3])
+    """statement_list : statement ";"
+                      | statement_list statement ";" """
+    if len(p) > 3:
+        p[1].add_child(p[2])
         p[0] = p[1]
     else:
-        p[0] = StatementList(line=p.lineno, children=[p[1]])
+        p[0] = StatementList(line=p.lineno(1), children=[p[1]])
 
 
 def p_statement_print(p):
@@ -121,9 +115,20 @@ def p_error(p):
     else:
         print("Syntax error at EOF")
 
+
 yacc.yacc()
-yacc.parse('''a = 1
-b = 1.0
-c = [1, 2, 3, "abc", b]
-print [1,2,3,4][1]
-''')
+source = '''
+
+a = 1;
+b = 1.0;
+c = [1, 2, 3, "abc", b];
+
+print [1,2,3,4][1];
+
+'''
+
+try:
+    yacc.parse(source, tracking=True)
+except LexicalError, e:
+    print e
+    raise
