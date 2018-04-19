@@ -38,9 +38,13 @@ class Node(object):
         line=None, children=None, parent=None, scope=None
     ):
         self.line = line
-        self.children = children
+        self.children = children if children else []
         self.parent = parent
         self.scope = scope if scope else root_scope
+
+    def add_child(self, child):
+        self.children.append(child)
+        child.parent = self
 
 
 class Statement(Node):
