@@ -18,7 +18,7 @@ tokens = [
     'FLOAT', 'INTEGER',
     'NAME', 'STRING',
     'NEWLINE',
-    'OP_EQ', 'OP_NEQ', 'OP_GTEQ', 'OP_LTEQ',
+    'OP_FLOOR_DIV', 'OP_EQ', 'OP_NEQ', 'OP_GTEQ', 'OP_LTEQ',
 ] + list(reserved.values())
 
 literals = [
@@ -31,7 +31,7 @@ precedence = (
     ('left',  'OP_EQ', 'OP_NEQ'),
     ('left', '>', '<', 'OP_GTEQ', 'OP_LTEQ'),
     ('left', '+', '-'),
-    ('left', '*', '/', '%'),
+    ('left', '*', '/', 'OP_FLOOR_DIV', '%'),
     ('right', '^'),
 )
 
@@ -54,6 +54,7 @@ def t_STRING(t):
     t.value = t.value[1:-1].decode("string-escape")
     return t
 
+t_OP_FLOOR_DIV = '//'
 t_OP_EQ = '=='
 t_OP_NEQ = '!='
 t_OP_GTEQ = '>='
@@ -146,6 +147,7 @@ def p_expression_arithmetic(p):
     '''expression : expression "+" expression
                   | expression "-" expression
                   | expression "/" expression
+                  | expression OP_FLOOR_DIV expression
                   | expression "*" expression
                   | expression "%" expression
                   | expression "^" expression
@@ -225,7 +227,7 @@ def print_error(error, message, line_number, pos):
 
 yacc.yacc()
 source = '''a = 1;
-b = 4 ^ 3 ^ 2;
+b = 3 / 2;
 print b;
 b = ("a" == "b") and (1 == 1);
 print b;
