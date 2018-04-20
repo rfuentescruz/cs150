@@ -9,6 +9,8 @@ from ast import *
 reserved = {
     'while': 'WHILE',
     'print': 'PRINT',
+    'if': 'IF',
+    'else': 'ELSE',
     'and': 'OP_AND',
     'or': 'OP_OR',
     'not': 'OP_NOT',
@@ -23,7 +25,7 @@ tokens = [
 ] + list(reserved.values())
 
 literals = [
-    '=', '[', ']', ',', ';', '(', ')',
+    '=', '[', ']', ',', ';', '(', ')', '{', '}',
     '+', '-', '*', '/', '%', '^', '>', '<', '!'
 ]
 
@@ -132,6 +134,33 @@ def p_statement_assign(p):
     p[0] = Assign(name=p[1], expr=p[3])
 
 @inject_production
+def p_statement_conditional(p):
+    '''statement : conditionals
+                 | conditionals ELSE "{" statement_list "}"
+    '''
+    if len(p) > 2:
+        p[1].fallback = p[4]
+
+    p[0] = p[1]
+
+@inject_production
+def p_conditionals(p):
+    '''conditionals : conditional_branch
+                    | conditionals ELSE conditional_branch
+    '''
+    if len(p) == 2:
+        p[0] = Conditional()
+        p[0].add_child(p[1])
+    else:
+        p[1].add_child(p[3])
+        p[0] = p[1]
+
+@inject_production
+def p_conditional_branch(p):
+    'conditional_branch : IF "(" expression ")" "{" statement_list "}"'
+    p[0] = ConditionalBranch(expr=p[3], statements=p[6])
+
+@inject_production
 def p_expression_index(p):
     'expression : expression "[" expression "]"'
     p[0] = Index(target=p[1], index=p[3])
@@ -236,11 +265,35 @@ def print_error(error, message, line_number, pos):
 
 yacc.yacc()
 source = '''
-a = False;
-b = True;
-print a and b;
-c = not a and b;
-print c;
+a = True;
+b = False;
+if (a) {
+    print 1;
+
+    if (b) {
+        print -2;
+    } else {
+        print 2;
+    };
+
+    if (b) {
+        print -3;
+    } else if (a) {
+        print 3;
+    } else {
+        print -3;
+    };
+
+    if (b) {
+        print -4;
+    } else if (b) {
+        print -4;
+    } else if (a) {
+        print 4;
+    } else {
+        print -4;
+    };
+};
 '''
 
 try:

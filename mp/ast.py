@@ -146,6 +146,49 @@ class Print(Statement):
         print self.expr.evaluate()
 
 
+class ConditionalBranch(Node):
+    def __init__(self, expr, statements=None, *args, **kwargs):
+        super(ConditionalBranch, self).__init__(*args, **kwargs)
+        if expr and not isinstance(expr, Expression):
+            raise LexicalError(
+                p=self.p,
+                message='Invalid conditional expression',
+                index=3
+            )
+
+        if statements and not isinstance(statements, StatementList):
+            raise LexicalError(
+                p=self.p,
+                message='Invalid conditional body',
+                index=6
+            )
+
+        self.expr = expr
+        self.statements = statements
+
+
+class Conditional(Statement):
+    def __init__(self, fallback=None, *args, **kwargs):
+        super(Conditional, self).__init__(*args, **kwargs)
+        if fallback and not isinstance(fallback, StatementList):
+            raise LexicalError(
+                p=self.p,
+                message='Invalid "else" body',
+                index=11
+            )
+
+        self.fallback = fallback
+
+    def execute(self):
+        for branch in self.children:
+            if branch.expr.evaluate():
+                branch.statements.execute()
+                return
+
+        if self.fallback:
+            self.fallback.execute()
+
+
 class Lookup(Expression):
     def __init__(self, name, *args, **kwargs):
         super(Lookup, self).__init__(*args, **kwargs)
