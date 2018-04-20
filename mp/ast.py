@@ -321,3 +321,41 @@ class LogicalOp(BinaryOp):
             return bool(l and r)
         elif self.op == 'or':
             return bool(l or r)
+
+
+class UnaryOp(Expression):
+    OPERATORS = ['-', 'not']
+
+    def __init__(self, expr, op, *args, **kwargs):
+        super(UnaryOp, self).__init__(*args, **kwargs)
+        if not isinstance(expr, Expression):
+            raise LexicalError(
+                p=self.p,
+                message='Invalid unary operand. Expected an %s' % Expression.__class__,
+                index=1
+            )
+
+        if op not in self.OPERATORS:
+            raise LexicalError(
+                p=self.p,
+                message='Invalid operator: "%s". Supported operators are %s' % (
+                    op, self.OPERATORS),
+                index=2
+            )
+
+        self.expr = expr
+        self.op = op
+
+    def evaluate(self):
+        expr = self.expr.evaluate()
+
+        if self.op == 'not':
+            return bool(not expr)
+        elif self.op == '-':
+            if not isinstance(expr, (int, float)):
+                raise RuntimeError(
+                    node=self.expr,
+                    message='Unsupported operation "%s" for type' % self.op
+                )
+
+            return -expr

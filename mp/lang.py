@@ -11,6 +11,7 @@ reserved = {
     'print': 'PRINT',
     'and': 'OP_AND',
     'or': 'OP_OR',
+    'not': 'OP_NOT',
 }
 
 tokens = [
@@ -18,7 +19,7 @@ tokens = [
     'FLOAT', 'INTEGER',
     'NAME', 'STRING',
     'NEWLINE',
-    'OP_FLOOR_DIV', 'OP_EQ', 'OP_NEQ', 'OP_GTEQ', 'OP_LTEQ',
+    'OP_FLOOR_DIV', 'OP_EQ', 'OP_NEQ', 'OP_GTEQ', 'OP_LTEQ', 'OP_UNARY_NEG'
 ] + list(reserved.values())
 
 literals = [
@@ -27,6 +28,7 @@ literals = [
 ]
 
 precedence = (
+    ('right', 'OP_NOT', 'OP_UNARY_NEG'),
     ('left',  'OP_AND', 'OP_OR'),
     ('left',  'OP_EQ', 'OP_NEQ'),
     ('left', '>', '<', 'OP_GTEQ', 'OP_LTEQ'),
@@ -59,6 +61,7 @@ t_OP_EQ = '=='
 t_OP_NEQ = '!='
 t_OP_GTEQ = '>='
 t_OP_LTEQ = '<='
+t_OP_UNARY_NEG = '-'
 
 def t_TRUE(t):
     r'True'
@@ -165,13 +168,19 @@ def p_expression_comparison(p):
     '''
     p[0] = ComparisonOp(left=p[1], right=p[3], op=p[2])
 
-
 @inject_production
 def p_expression_logical(p):
     '''expression : expression OP_AND expression
                   | expression OP_OR expression
     '''
     p[0] = LogicalOp(left=p[1], right=p[3], op=p[2])
+
+@inject_production
+def p_expression_unary(p):
+    '''expression : OP_NOT expression
+                  | OP_UNARY_NEG expression
+    '''
+    p[0] = UnaryOp(expr=p[2], op=p[1])
 
 def p_expression_group(p):
     'expression : "(" expression ")"'
@@ -226,11 +235,12 @@ def print_error(error, message, line_number, pos):
 
 
 yacc.yacc()
-source = '''a = 1;
-b = 3 / 2;
-print b;
-b = ("a" == "b") and (1 == 1);
-print b;
+source = '''
+a = False;
+b = True;
+print a and b;
+c = not a and b;
+print c;
 '''
 
 try:
