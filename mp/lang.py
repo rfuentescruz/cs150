@@ -91,7 +91,7 @@ def t_error(t):
 
 lexer = lex.lex()
 
-def track(f):
+def inject_production(f):
     @functools.wraps(f)
     def wrapper(p):
         f(p)
@@ -101,12 +101,12 @@ def track(f):
     wrapper.co_firstlineno = f.__code__.co_firstlineno
     return wrapper
 
-@track
+@inject_production
 def p_main(p):
     """main : statement_list"""
     p[1].execute()
 
-@track
+@inject_production
 def p_statement_list(p):
     """statement_list : statement ";"
                       | statement_list statement ";" """
@@ -117,22 +117,22 @@ def p_statement_list(p):
         p[0] = StatementList()
         p[0].add_child(p[1])
 
-@track
+@inject_production
 def p_statement_print(p):
     'statement : PRINT expression'
     p[0] = Print(expr=p[2])
 
-@track
+@inject_production
 def p_statement_assign(p):
     'statement : NAME "=" expression'
     p[0] = Assign(name=p[1], expr=p[3])
 
-@track
+@inject_production
 def p_expression_index(p):
     'expression : expression "[" expression "]"'
     p[0] = Index(target=p[1], index=p[3])
 
-@track
+@inject_production
 def p_expression_atom(p):
     '''expression : atom
                   | "[" atom_list "]"'''
@@ -141,7 +141,7 @@ def p_expression_atom(p):
     else:
         p[0] = p[1]
 
-@track
+@inject_production
 def p_expression_arithmetic(p):
     '''expression : expression "+" expression
                   | expression "-" expression
@@ -152,7 +152,7 @@ def p_expression_arithmetic(p):
     '''
     p[0] = ArithmeticOp(left=p[1], right=p[3], op=p[2])
 
-@track
+@inject_production
 def p_expression_comparison(p):
     '''expression : expression OP_EQ expression
                   | expression OP_NEQ expression
@@ -164,18 +164,18 @@ def p_expression_comparison(p):
     p[0] = ComparisonOp(left=p[1], right=p[3], op=p[2])
 
 
+@inject_production
 def p_expression_logical(p):
     '''expression : expression OP_AND expression
                   | expression OP_OR expression
     '''
     p[0] = LogicalOp(left=p[1], right=p[3], op=p[2])
 
-
 def p_expression_group(p):
     'expression : "(" expression ")"'
     p[0] = p[2]
 
-@track
+@inject_production
 def p_atom_list(p):
     '''atom_list : atom
                  | atom_list ',' atom'''
@@ -185,12 +185,12 @@ def p_atom_list(p):
     else:
         p[0] = List(items=[p[1]])
 
-@track
+@inject_production
 def p_atom_name(p):
     'atom : NAME'
     p[0] = Lookup(name=p[1])
 
-@track
+@inject_production
 def p_atom_number(p):
     '''atom : FLOAT
             | INTEGER
