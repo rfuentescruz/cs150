@@ -318,6 +318,6 @@ class LogicalOp(BinaryOp):
         r = self.right.evaluate()
 
         if self.op == 'and':
-            return l and r
+            return bool(l and r)
         elif self.op == 'or':
-            return l or r
+            return bool(l or r)
