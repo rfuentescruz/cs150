@@ -304,32 +304,41 @@ def print_error(error, message, line_number, pos):
 
 
 yacc.yacc()
-source = '''
-function moveTower(height, from, to, through) {
-    if (height >= 1) {
-        moveTower(height - 1, from, through, to);
-        moveDisk(from, to);
-        moveTower(height - 1, through, to, from);
-    };
-};
 
-function moveDisk(from, to) {
-    print "Move disk " + from + " to " + to;
-};
+def foo_parse(code):
+    try:
+        yacc.parse(code, tracking=True)
+    except LexicalError as error:
+        print_error("Lexical error", error.message, error.line_number, error.pos)
+    except SyntaxError as error:
+        print_error("Syntax error", error.message, error.line_number, error.pos)
+    except ParseError as error:
+        print_error("Parse error", error.message, error.line_number, error.pos)
+    except RuntimeError as error:
+        print_error("Runtime error", error.message, error.line_number, error.pos)
 
-moveTower(3, "A", "B", "C");
-a = [1, [2], 3];
-a[1][0] = 0;
-print a;
-'''
 
-try:
-    yacc.parse(source, tracking=True)
-except LexicalError as error:
-    print_error("Lexical error", error.message, error.line_number, error.pos)
-except SyntaxError as error:
-    print_error("Syntax error", error.message, error.line_number, error.pos)
-except ParseError as error:
-    print_error("Parse error", error.message, error.line_number, error.pos)
-except RuntimeError as error:
-    print_error("Runtime error", error.message, error.line_number, error.pos)
+def get_line(prompt):
+    line = raw_input(prompt)
+    if not line.strip().endswith('{') and not line.strip().endswith(';'):
+        line += ';'
+    return line
+
+
+if len(sys.argv) >= 2:
+    with open(sys.argv[1]) as source_file:
+        source = source_file.read()
+        foo_parse(source)
+else:
+    line = ''
+    while True:
+        line = get_line('foo > ')
+        if line.strip().endswith('{'):
+            while True:
+                _line = get_line('... > ')
+                line += _line
+                if _line.strip().endswith('};'):
+                    break
+
+        source = line
+        foo_parse(line)
