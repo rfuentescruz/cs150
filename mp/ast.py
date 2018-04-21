@@ -104,13 +104,15 @@ class Expression(Node):
 
 class StatementList(Node):
     def execute(self):
+        r = []
         for stmt in self.children:
             if not isinstance(stmt, Statement):
                 raise LexicalError(
                     p=self.p,
                     message='Expected a statement, got %s' % (stmt.__class__)
                 )
-            stmt.execute()
+            r.append(stmt.execute())
+        return r
 
 
 class Assign(Statement):
@@ -128,6 +130,7 @@ class Assign(Statement):
 
     def execute(self):
         self.scope[self.name] = self.expr.evaluate()
+        return self.scope[self.name]
 
 
 class Print(Statement):
@@ -143,7 +146,9 @@ class Print(Statement):
         self.expr = expr
 
     def execute(self):
-        print self.expr.evaluate()
+        expr = self.expr.evaluate()
+        print expr
+        return expr
 
 
 class ConditionalBranch(Node):
@@ -182,11 +187,12 @@ class Conditional(Statement):
     def execute(self):
         for branch in self.children:
             if branch.expr.evaluate():
-                branch.statements.execute()
-                return
+                return branch.statements.execute()
 
         if self.fallback:
-            self.fallback.execute()
+            return self.fallback.execute()
+
+        return None
 
 
 class Loop(Statement):
@@ -210,8 +216,10 @@ class Loop(Statement):
         self.body = body
 
     def execute(self):
+        r = []
         while self.expr.evaluate():
-            self.body.execute()
+            r.append(self.body.execute())
+        return r
 
 class Lookup(Expression):
     def __init__(self, name, *args, **kwargs):
@@ -270,6 +278,13 @@ class Index(Expression):
             raise LexicalError(
                 p=self.p,
                 message='Invalid index expression',
+                index=3
+            )
+
+        if index < 0:
+            raise RuntimeError(
+                p=self.p,
+                message='Negative indexes not supported',
                 index=3
             )
 

@@ -4,7 +4,7 @@ import sys
 
 from ply import lex, yacc
 
-from ast import *
+from .ast import *
 
 reserved = {
     'while': 'WHILE',
@@ -109,7 +109,7 @@ def inject_production(f):
 @inject_production
 def p_main(p):
     """main : statement_list"""
-    p[1].execute()
+    p[0] = p[1].execute()
 
 @inject_production
 def p_statement_list(p):
@@ -133,6 +133,11 @@ def p_statement_assign(p):
     p[0] = Assign(name=p[1], expr=p[3])
 
 @inject_production
+def p_statement_loop(p):
+    '''statement : WHILE "(" expression ")" "{" statement_list "}"'''
+    p[0] = Loop(expr=p[3], body=p[6], p=p)
+
+@inject_production
 def p_statement_conditional(p):
     '''statement : conditionals
                  | conditionals ELSE "{" statement_list "}"
@@ -141,11 +146,6 @@ def p_statement_conditional(p):
         p[1].fallback = p[4]
 
     p[0] = p[1]
-
-@inject_production
-def p_statement_loop(p):
-    '''statement : WHILE "(" expression ")" "{" statement_list "}"'''
-    p[0] = Loop(expr=p[3], body=p[6], p=p)
 
 @inject_production
 def p_conditionals(p):
@@ -163,6 +163,11 @@ def p_conditionals(p):
 def p_conditional_branch(p):
     'conditional_branch : IF "(" expression ")" "{" statement_list "}"'
     p[0] = ConditionalBranch(expr=p[3], statements=p[6])
+
+@inject_production
+def p_statement_expr(p):
+    '''statement : expression'''
+    p[0] = Print(expr=p[1])
 
 @inject_production
 def p_expression_index(p):
@@ -267,19 +272,23 @@ def print_error(error, message, line_number, pos):
     print " %s^" % (" " * find_column(source, pos - 1))
 
 
-yacc.yacc()
+parser = yacc.yacc()
 
-def foo_parse(code):
+def parse(code):
     try:
-        yacc.parse(code, tracking=True)
+        return parser.parse(code, tracking=True)
     except LexicalError as error:
         print_error("Lexical error", error.message, error.line_number, error.pos)
+        return error
     except SyntaxError as error:
         print_error("Syntax error", error.message, error.line_number, error.pos)
+        return error
     except ParseError as error:
         print_error("Parse error", error.message, error.line_number, error.pos)
+        return error
     except RuntimeError as error:
         print_error("Runtime error", error.message, error.line_number, error.pos)
+        return error
 
 
 def get_line(prompt):
@@ -289,20 +298,25 @@ def get_line(prompt):
     return line
 
 
-if len(sys.argv) >= 2:
-    with open(sys.argv[1]) as source_file:
-        source = source_file.read()
-        foo_parse(source)
-else:
-    line = ''
-    while True:
-        line = get_line('foo > ')
-        if line.strip().endswith('{'):
-            while True:
-                _line = get_line('... > ')
-                line += _line
-                if _line.strip().endswith('};'):
-                    break
+def main():
+    if len(sys.argv) >= 2:
+        with open(sys.argv[1]) as source_file:
+            source = source_file.read()
+            parse(source)
+    else:
+        line = ''
+        while True:
+            line = get_line('foo > ')
+            if line.strip().endswith('{'):
+                while True:
+                    _line = get_line('... > ')
+                    line += _line
+                    if _line.strip().endswith('};'):
+                        break
 
-        source = line
-        foo_parse(line)
+            source = line
+            parse(line)
+
+
+if __name__ == '__main__':
+    main()
