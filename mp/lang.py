@@ -268,50 +268,41 @@ def print_error(error, message, line_number, pos):
 
 
 yacc.yacc()
-source = '''
-a = True;
-b = False;
-if (a) {
-    print 1;
 
-    if (b) {
-        print -2;
-    } else {
-        print 2;
-    };
+def foo_parse(code):
+    try:
+        yacc.parse(code, tracking=True)
+    except LexicalError as error:
+        print_error("Lexical error", error.message, error.line_number, error.pos)
+    except SyntaxError as error:
+        print_error("Syntax error", error.message, error.line_number, error.pos)
+    except ParseError as error:
+        print_error("Parse error", error.message, error.line_number, error.pos)
+    except RuntimeError as error:
+        print_error("Runtime error", error.message, error.line_number, error.pos)
 
-    if (b) {
-        print -3;
-    } else if (a) {
-        print 3;
-    } else {
-        print -3;
-    };
 
-    if (b) {
-        print -4;
-    } else if (b) {
-        print -4;
-    } else if (a) {
-        print 4;
-    } else {
-        print -4;
-    };
-};
-c = 10;
-while (c > 0) {
-    print c;
-    c = c - 1;
-};
-'''
+def get_line(prompt):
+    line = raw_input(prompt)
+    if not line.strip().endswith('{') and not line.strip().endswith(';'):
+        line += ';'
+    return line
 
-try:
-    yacc.parse(source, tracking=True)
-except LexicalError as error:
-    print_error("Lexical error", error.message, error.line_number, error.pos)
-except SyntaxError as error:
-    print_error("Syntax error", error.message, error.line_number, error.pos)
-except ParseError as error:
-    print_error("Parse error", error.message, error.line_number, error.pos)
-except RuntimeError as error:
-    print_error("Runtime error", error.message, error.line_number, error.pos)
+
+if len(sys.argv) >= 2:
+    with open(sys.argv[1]) as source_file:
+        source = source_file.read()
+        foo_parse(source)
+else:
+    line = ''
+    while True:
+        line = get_line('foo > ')
+        if line.strip().endswith('{'):
+            while True:
+                _line = get_line('... > ')
+                line += _line
+                if _line.strip().endswith('};'):
+                    break
+
+        source = line
+        foo_parse(line)

@@ -1,0 +1,36 @@
+a = True;
+b = False;
+c = "a \n b";
+print c;
+if (a) {
+    print 1;
+
+    if (b) {
+        print -2;
+    } else {
+        print 2;
+    };
+
+    if (b) {
+        print -3;
+    } else if (a) {
+        print 3;
+    } else {
+        print -3;
+    };
+
+    if (b) {
+        print -4;
+    } else if (b) {
+        print -4;
+    } else if (a) {
+        print 4;
+    } else {
+        print -4;
+    };
+};
+c = 10;
+while (c > 0) {
+    print c;
+    c = c - 1;
+};
