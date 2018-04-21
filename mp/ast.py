@@ -189,6 +189,30 @@ class Conditional(Statement):
             self.fallback.execute()
 
 
+class Loop(Statement):
+    def __init__(self, expr, body, *args, **kwargs):
+        super(Loop, self).__init__(*args, **kwargs)
+        if not isinstance(expr, Expression):
+            raise LexicalError(
+                p=self.p,
+                message='Invalid loop condition',
+                index=3
+            )
+
+        if not isinstance(body, StatementList):
+            raise LexicalError(
+                p=self.p,
+                message='Invalid loop body',
+                index=6
+            )
+
+        self.expr = expr
+        self.body = body
+
+    def execute(self):
+        while self.expr.evaluate():
+            self.body.execute()
+
 class Lookup(Expression):
     def __init__(self, name, *args, **kwargs):
         super(Lookup, self).__init__(*args, **kwargs)

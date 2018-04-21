@@ -143,6 +143,11 @@ def p_statement_conditional(p):
     p[0] = p[1]
 
 @inject_production
+def p_statement_loop(p):
+    '''statement : WHILE "(" expression ")" "{" statement_list "}"'''
+    p[0] = Loop(expr=p[3], body=p[6], p=p)
+
+@inject_production
 def p_conditionals(p):
     '''conditionals : conditional_branch
                     | conditionals ELSE conditional_branch
@@ -292,6 +297,11 @@ if (a) {
     } else {
         print -4;
     };
+};
+c = 10;
+while (c > 0) {
+    print c;
+    c = c - 1;
 };
 '''
 
