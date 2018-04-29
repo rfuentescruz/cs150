@@ -303,19 +303,23 @@ def print_error(error, message, line_number, pos):
     print " %s^" % (" " * find_column(source, pos - 1))
 
 
-yacc.yacc()
+parser = yacc.yacc()
 
-def foo_parse(code):
+def parse(code):
     try:
-        yacc.parse(code, tracking=True)
+        return parser.parse(code, tracking=True)
     except LexicalError as error:
         print_error("Lexical error", error.message, error.line_number, error.pos)
+        return error
     except SyntaxError as error:
         print_error("Syntax error", error.message, error.line_number, error.pos)
+        return error
     except ParseError as error:
         print_error("Parse error", error.message, error.line_number, error.pos)
+        return error
     except RuntimeError as error:
         print_error("Runtime error", error.message, error.line_number, error.pos)
+        return error
 
 
 def get_line(prompt):
@@ -325,20 +329,28 @@ def get_line(prompt):
     return line
 
 
-if len(sys.argv) >= 2:
-    with open(sys.argv[1]) as source_file:
-        source = source_file.read()
-        foo_parse(source)
-else:
-    line = ''
-    while True:
-        line = get_line('foo > ')
-        if line.strip().endswith('{'):
-            while True:
-                _line = get_line('... > ')
-                line += _line
-                if _line.strip().endswith('};'):
-                    break
+def main():
+    global source
+    if len(sys.argv) >= 2:
+        with open(sys.argv[1]) as source_file:
+            source = source_file.read()
+            parse(source)
+    else:
+        line = ''
+        while True:
+            line = get_line('foo > ')
+            if line.strip().endswith('{'):
+                while True:
+                    _line = get_line('... > ')
+                    line += _line
+                    if _line.strip().endswith('};'):
+                        break
 
-        source = line
-        foo_parse(line)
+            source = line
+            r = parse(line)
+            if r is not None:
+                print r
+
+
+if __name__ == '__main__':
+    main()
