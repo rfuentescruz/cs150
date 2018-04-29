@@ -1,0 +1,54 @@
+a = [9, 10, 2, 1, 5, 4, 3, 6, 8, 7, 13];
+print a;
+
+function swap(a, i, j) {
+  tmp = a[i];
+  a[i] = a[j];
+  a[j] = tmp;
+};
+
+function max_heapify(a, i, length) {
+  loop = True;
+  while (loop) {
+    left = i * 2 + 1;
+    right = i * 2 + 2;
+    largest = i;
+
+    if (left < length and a[left] > a[largest]) {
+      largest = left;
+    };
+
+    if (right < length and a[right] > a[largest]) {
+      largest = right;
+    };
+
+    if (i == largest) {
+      loop = False;
+    } else {
+      swap(a, i, largest);
+      i = largest;
+    };
+  };
+};
+
+function heapify(a, length) {
+  i = length // 2;
+  while (i >= 0) {
+    max_heapify(a, i, length);
+    i = i - 1;
+  };
+};
+
+function heapsort(a) {
+  heapify(a, len a);
+
+  i = len a - 1;
+  while (i > 0) {
+    swap(a, i, 0);
+    max_heapify(a, 0, i);
+    i = i - 1;
+  };
+};
+
+heapsort(a);
+print a;

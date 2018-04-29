@@ -1,0 +1,15 @@
+function moveTower(height, from, to, through) {
+    if (height >= 1) {
+        moveTower(height - 1, from, through, to);
+        moveDisk(from, to);
+        moveTower(height - 1, through, to, from);
+    };
+};
+
+function moveDisk(from, to) {
+    print "Move disk " + from + " to " + to;
+};
+
+moveTower(3, "A", "B", "C");
+a = [1, 2];
+print len a;
