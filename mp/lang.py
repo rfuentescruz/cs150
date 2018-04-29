@@ -16,6 +16,7 @@ reserved = {
     'and': 'OP_AND',
     'or': 'OP_OR',
     'not': 'OP_NOT',
+    'len': 'LEN',
 }
 
 tokens = [
@@ -251,9 +252,15 @@ def p_expression_unary(p):
     '''
     p[0] = UnaryOp(expr=p[2], op=p[1])
 
+@inject_production
 def p_expression_group(p):
     'expression : "(" expression ")"'
     p[0] = p[2]
+
+@inject_production
+def p_length(p):
+    'expression : LEN expression'
+    p[0] = Length(array=p[2])
 
 @inject_production
 def p_list(p):

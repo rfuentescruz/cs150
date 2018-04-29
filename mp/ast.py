@@ -560,3 +560,21 @@ class UnaryOp(Expression):
                 )
 
             return -expr
+
+
+class Length(Expression):
+    def __init__(self, array, *args, **kwargs):
+        super(Length, self).__init__(*args, **kwargs)
+        if not isinstance(array, Expression):
+            raise LexicalError(
+                p=self.p,
+                index=2,
+                message='Expected an expression, got "%s"' % array.__class__
+            )
+        self.array = array
+
+    def evaluate(self, scope=root_scope):
+        a = self.array.evaluate(scope)
+        if not isinstance(a, (list, str)):
+            raise RuntimeError(node=self, index=2, message='Unable to calculate length of a non-list')
+        return len(a)
