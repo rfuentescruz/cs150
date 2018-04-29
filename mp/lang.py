@@ -40,6 +40,7 @@ precedence = (
     ('left', '+', '-'),
     ('left', '*', '/', 'OP_FLOOR_DIV', '%'),
     ('right', '^'),
+    ('right', '[', 'LEN'),
 )
 
 source = ''
@@ -112,7 +113,7 @@ def inject_production(f):
 @inject_production
 def p_main(p):
     """main : statement_list"""
-    p[1].execute()
+    p[0] = p[1].execute()
 
 @inject_production
 def p_statement_list(p):
