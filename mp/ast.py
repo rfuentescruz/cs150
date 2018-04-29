@@ -77,6 +77,9 @@ class Scope(object):
     def __contains__(self, name):
         return name in self.names
 
+    def __delitem__(self, name):
+        del self.names[name]
+
 
 root_scope = Scope()
 
@@ -114,7 +117,8 @@ class StatementList(Node):
                     message='Expected a statement, got %s' % (stmt.__class__)
                 )
             r = stmt.execute(scope)
-            if isinstance(stmt, Return):
+
+            if isinstance(stmt, Return) or 'return' in scope:
                 return r
 
 
@@ -215,9 +219,35 @@ class Loop(Statement):
         self.body = body
 
     def execute(self, scope=root_scope):
-        while self.expr.evaluate(scope):
+        while self.expr.evaluate(scope) and 'return' not in scope:
             self.body.execute(scope)
 
+
+class Return(Statement):
+    def __init__(self, expr, *args, **kwargs):
+        super(Return, self).__init__(*args, **kwargs)
+        self.expr = expr
+
+    def execute(self, scope):
+        scope['return'] = self.expr.evaluate(scope)
+        return scope['return']
+
+
+class Function(Statement):
+    def __init__(self, name, arg_list, body, *args, **kwargs):
+        super(Function, self).__init__(*args, **kwargs)
+        self.name = name
+        self.arg_list = arg_list
+        self.body = body
+
+    def execute(self, scope):
+        if self.name in scope:
+            raise RuntimeError(
+                node=self.p,
+                message='Unable to define function "%s". Name already defined',
+                index=2
+            )
+        scope[self.name] = self
 
 
 class BareExpression(Statement):
@@ -227,6 +257,25 @@ class BareExpression(Statement):
 
     def execute(self, scope):
         self.expr.evaluate(scope)
+
+class FunctionCall(Expression):
+    def __init__(self, name, call_args, *args, **kwargs):
+        self.name = name
+        self.call_args = call_args
+
+    def evaluate(self, scope):
+        f = scope[self.name]
+        new_scope = Scope(parent=scope)
+        for (i, arg) in enumerate(self.call_args.items):
+            new_scope[f.arg_list[i]] = arg.evaluate(scope)
+
+        r = f.body.execute(new_scope)
+
+        if 'return' in new_scope:
+            r = new_scope['return']
+            del new_scope['return']
+
+        return r
 
 class Lookup(Expression):
     def __init__(self, name, *args, **kwargs):

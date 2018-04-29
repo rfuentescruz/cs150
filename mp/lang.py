@@ -7,6 +7,8 @@ from ply import lex, yacc
 from ast import *
 
 reserved = {
+    'function': 'FUNCTION',
+    'return': 'RETURN',
     'while': 'WHILE',
     'print': 'PRINT',
     'if': 'IF',
@@ -26,7 +28,7 @@ tokens = [
 
 literals = [
     '=', '[', ']', ',', ';', '(', ')', '{', '}',
-    '+', '-', '*', '/', '%', '^', '>', '<', '!'
+    '+', '-', '*', '/', '%', '^', '>', '<', '!', '"'
 ]
 
 precedence = (
@@ -163,10 +165,35 @@ def p_conditional_branch(p):
 def p_statement_loop(p):
     '''statement : WHILE "(" expression ")" "{" statement_list "}"'''
     p[0] = Loop(expr=p[3], body=p[6], p=p)
+
+@inject_production
+def p_function_definition(p):
+    '''statement : FUNCTION NAME "(" arg_list ")" "{" statement_list "}"'''
+    p[0] = Function(name=p[2], arg_list=p[4], body=p[7])
+
+@inject_production
+def p_return(p):
+    '''statement : RETURN expression'''
+    p[0] = Return(expr=p[2])
+
+def p_arg_list(p):
+    '''arg_list : NAME
+                | arg_list "," NAME'''
+    if len(p) > 2:
+        p[1].append(p[3])
+        p[0] = p[1]
+    else:
+        p[0] = [p[1]]
+
 @inject_production
 def p_bare_expression(p):
     '''statement : expression'''
     p[0] = BareExpression(expr=p[1])
+
+@inject_production
+def p_function_call(p):
+    '''expression : NAME "(" list ")"'''
+    p[0] = FunctionCall(name=p[1], call_args=p[3])
 
 @inject_production
 def p_expression_index(p):
@@ -273,40 +300,19 @@ def print_error(error, message, line_number, pos):
 
 yacc.yacc()
 source = '''
-a = True;
-b = False;
-if (a) {
-    print 1;
-
-    if (b) {
-        print -2;
-    } else {
-        print 2;
-    };
-
-    if (b) {
-        print -3;
-    } else if (a) {
-        print 3;
-    } else {
-        print -3;
-    };
-
-    if (b) {
-        print -4;
-    } else if (b) {
-        print -4;
-    } else if (a) {
-        print 4;
-    } else {
-        print -4;
+function moveTower(height, from, to, through) {
+    if (height >= 1) {
+        moveTower(height - 1, from, through, to);
+        moveDisk(from, to);
+        moveTower(height - 1, through, to, from);
     };
 };
-c = 10;
-while (c > 0) {
-    print c;
-    c = c - 1;
+
+function moveDisk(from, to) {
+    print "Move disk " + from + " to " + to;
 };
+
+moveTower(3, "A", "B", "C");
 '''
 
 try:
