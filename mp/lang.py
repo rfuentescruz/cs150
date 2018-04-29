@@ -186,6 +186,11 @@ def p_arg_list(p):
         p[0] = [p[1]]
 
 @inject_production
+def p_assign_index(p):
+    '''statement : expression "[" expression "]" "=" expression'''
+    p[0] = IndexAssign(ref=p[1], index=p[3], value=p[6])
+
+@inject_production
 def p_bare_expression(p):
     '''statement : expression'''
     p[0] = BareExpression(expr=p[1])
@@ -313,6 +318,9 @@ function moveDisk(from, to) {
 };
 
 moveTower(3, "A", "B", "C");
+a = [1, [2], 3];
+a[1][0] = 0;
+print a;
 '''
 
 try:

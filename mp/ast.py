@@ -138,6 +138,49 @@ class Assign(Statement):
     def execute(self, scope=root_scope):
         scope[self.name] = self.expr.evaluate(scope)
 
+class IndexAssign(Statement):
+    def __init__(self, ref, index, value, *args, **kwargs):
+        super(IndexAssign, self).__init__(*args, **kwargs)
+        if not isinstance(ref, Expression):
+            raise LexicalError(
+                p=self.p,
+                message='Expected an expression , got %s' % (ref.__class__),
+                index=1
+            )
+        self.ref = ref
+
+        if not isinstance(index, Expression):
+            raise LexicalError(
+                p=self.p,
+                message='Expected an expression , got %s' % (index.__class__),
+                index=3
+            )
+
+        self.index = index
+
+        if not isinstance(value, Expression):
+            raise LexicalError(
+                p=self.p,
+                message='Expected an expression , got %s' % (value.__class__),
+                index=6
+            )
+        self.value = value
+
+    def execute(self, scope=root_scope):
+        ref = self.ref.evaluate(scope)
+        if not isinstance(ref, (str, list)):
+            raise RuntimeError(
+                node=self, index=1, message='Unable to index a non-list'
+            )
+
+        index = self.index.evaluate(scope)
+        if not isinstance(index, int) or index < 0:
+            raise RuntimeError(
+                node=self, index=3, message='Invalid index expression. Indeces must be positive integers.'
+            )
+
+        ref[index] = self.value.evaluate(scope)
+
 
 class Print(Statement):
     def __init__(self, expr, *args, **kwargs):
