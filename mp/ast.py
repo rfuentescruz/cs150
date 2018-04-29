@@ -74,6 +74,9 @@ class Scope(object):
     def __setitem__(self, name, value):
         self.names[name] = value
 
+    def __contains__(self, name):
+        return name in self.names
+
 
 root_scope = Scope()
 
