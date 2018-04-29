@@ -176,9 +176,17 @@ class IndexAssign(Statement):
         index = self.index.evaluate(scope)
         if not isinstance(index, int) or index < 0:
             raise RuntimeError(
-                node=self, index=3, message='Invalid index expression. Indeces must be positive integers.'
+                node=self,
+                index=3,
+                message='Invalid index expression. Indeces must be positive integers.'
             )
 
+        if len(ref) <= index:
+            raise RuntimeError(
+                node=self,
+                message='Index out of range',
+                index=3
+            )
         ref[index] = self.value.evaluate(scope)
 
 
@@ -377,6 +385,20 @@ class Index(Expression):
             raise LexicalError(
                 p=self.p,
                 message='Invalid index expression',
+                index=3
+            )
+
+        if index < 0:
+            raise RuntimeError(
+                p=self.p,
+                message='Negative indexes not supported',
+                index=3
+            )
+
+        if len(target) <= index:
+            raise RuntimeError(
+                node=self,
+                message='Index out of range',
                 index=3
             )
 
