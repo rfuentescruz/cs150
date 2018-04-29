@@ -511,6 +511,11 @@ class LogicalOp(BinaryOp):
 
     def evaluate(self, scope):
         l = self.left.evaluate(scope)
+        if self.op == 'and' and not l:
+            return False
+        elif self.op == 'or' and l:
+            return True
+
         r = self.right.evaluate(scope)
 
         if self.op == 'and':
