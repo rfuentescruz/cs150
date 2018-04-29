@@ -96,24 +96,26 @@ class Node(object):
 
 
 class Statement(Node):
-    def execute(self):
+    def execute(self, scope=root_scope):
         pass
 
 
 class Expression(Node):
-    def evaluate(self):
+    def evaluate(self, scope):
         return None
 
 
 class StatementList(Node):
-    def execute(self):
+    def execute(self, scope=root_scope):
         for stmt in self.children:
             if not isinstance(stmt, Statement):
                 raise LexicalError(
                     p=self.p,
                     message='Expected a statement, got %s' % (stmt.__class__)
                 )
-            stmt.execute()
+            r = stmt.execute(scope)
+            if isinstance(stmt, Return):
+                return r
 
 
 class Assign(Statement):
@@ -129,8 +131,8 @@ class Assign(Statement):
 
         self.expr = expr
 
-    def execute(self):
-        self.scope[self.name] = self.expr.evaluate()
+    def execute(self, scope=root_scope):
+        scope[self.name] = self.expr.evaluate(scope)
 
 
 class Print(Statement):
@@ -145,8 +147,8 @@ class Print(Statement):
 
         self.expr = expr
 
-    def execute(self):
-        print self.expr.evaluate()
+    def execute(self, scope=root_scope):
+        print self.expr.evaluate(scope)
 
 
 class ConditionalBranch(Node):
@@ -182,14 +184,14 @@ class Conditional(Statement):
 
         self.fallback = fallback
 
-    def execute(self):
+    def execute(self, scope=root_scope):
         for branch in self.children:
-            if branch.expr.evaluate():
-                branch.statements.execute()
+            if branch.expr.evaluate(scope):
+                branch.statements.execute(scope)
                 return
 
         if self.fallback:
-            self.fallback.execute()
+            self.fallback.execute(scope)
 
 
 class Loop(Statement):
@@ -212,18 +214,20 @@ class Loop(Statement):
         self.expr = expr
         self.body = body
 
-    def execute(self):
-        while self.expr.evaluate():
-            self.body.execute()
+    def execute(self, scope=root_scope):
+        while self.expr.evaluate(scope):
+            self.body.execute(scope)
+
+
 
 class Lookup(Expression):
     def __init__(self, name, *args, **kwargs):
         super(Lookup, self).__init__(*args, **kwargs)
         self.name = name
 
-    def evaluate(self):
+    def evaluate(self, scope):
         try:
-            return self.scope[self.name]
+            return scope[self.name]
         except LookupError as e:
             e.p = self.p
             raise
@@ -234,7 +238,7 @@ class Literal(Expression):
         super(Literal, self).__init__(*args, **kwargs)
         self.value = value
 
-    def evaluate(self):
+    def evaluate(self, scope):
         return self.value
 
 
@@ -243,8 +247,8 @@ class List(Expression):
         super(List, self).__init__(*args, **kwargs)
         self.items = items if items else []
 
-    def evaluate(self):
-        return [i.evaluate() for i in self.items]
+    def evaluate(self, scope):
+        return [i.evaluate(scope) for i in self.items]
 
 
 class Index(Expression):
@@ -259,8 +263,8 @@ class Index(Expression):
         self.target = target
         self.index = index
 
-    def evaluate(self):
-        target = self.target.evaluate()
+    def evaluate(self, scope):
+        target = self.target.evaluate(scope)
         if not isinstance(target, (str, list)):
             raise LexicalError(
                 p=self.p,
@@ -268,7 +272,7 @@ class Index(Expression):
                 index=1
             )
 
-        index = self.index.evaluate()
+        index = self.index.evaluate(scope)
         if not isinstance(index, int):
             raise LexicalError(
                 p=self.p,
@@ -314,9 +318,9 @@ class BinaryOp(Expression):
 class ArithmeticOp(BinaryOp):
     OPERATORS = ['+', '-', '/', '//', '*', '%', '^']
 
-    def evaluate(self):
-        l = self.left.evaluate()
-        r = self.right.evaluate()
+    def evaluate(self, scope):
+        l = self.left.evaluate(scope)
+        r = self.right.evaluate(scope)
 
         if not isinstance(l, (int, float)) and self.op != '+':
             raise RuntimeError(
@@ -349,9 +353,9 @@ class ArithmeticOp(BinaryOp):
 class ComparisonOp(BinaryOp):
     OPERATORS = ['==', '!=', '<', '>', '<=', '>=']
 
-    def evaluate(self):
-        l = self.left.evaluate()
-        r = self.right.evaluate()
+    def evaluate(self, scope):
+        l = self.left.evaluate(scope)
+        r = self.right.evaluate(scope)
 
         if not isinstance(l, type(r)):
             raise RuntimeError(
@@ -383,9 +387,9 @@ class ComparisonOp(BinaryOp):
 class LogicalOp(BinaryOp):
     OPERATORS = ['and', 'or']
 
-    def evaluate(self):
-        l = self.left.evaluate()
-        r = self.right.evaluate()
+    def evaluate(self, scope):
+        l = self.left.evaluate(scope)
+        r = self.right.evaluate(scope)
 
         if self.op == 'and':
             return bool(l and r)
@@ -416,8 +420,8 @@ class UnaryOp(Expression):
         self.expr = expr
         self.op = op
 
-    def evaluate(self):
-        expr = self.expr.evaluate()
+    def evaluate(self, scope):
+        expr = self.expr.evaluate(scope)
 
         if self.op == 'not':
             return bool(not expr)
