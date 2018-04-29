@@ -143,11 +143,6 @@ def p_statement_conditional(p):
     p[0] = p[1]
 
 @inject_production
-def p_statement_loop(p):
-    '''statement : WHILE "(" expression ")" "{" statement_list "}"'''
-    p[0] = Loop(expr=p[3], body=p[6], p=p)
-
-@inject_production
 def p_conditionals(p):
     '''conditionals : conditional_branch
                     | conditionals ELSE conditional_branch
@@ -163,6 +158,15 @@ def p_conditionals(p):
 def p_conditional_branch(p):
     'conditional_branch : IF "(" expression ")" "{" statement_list "}"'
     p[0] = ConditionalBranch(expr=p[3], statements=p[6])
+
+@inject_production
+def p_statement_loop(p):
+    '''statement : WHILE "(" expression ")" "{" statement_list "}"'''
+    p[0] = Loop(expr=p[3], body=p[6], p=p)
+@inject_production
+def p_bare_expression(p):
+    '''statement : expression'''
+    p[0] = BareExpression(expr=p[1])
 
 @inject_production
 def p_expression_index(p):

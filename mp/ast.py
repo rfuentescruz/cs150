@@ -220,6 +220,14 @@ class Loop(Statement):
 
 
 
+class BareExpression(Statement):
+    def __init__(self, expr, *args, **kwargs):
+        super(BareExpression, self).__init__(*args, **kwargs)
+        self.expr = expr
+
+    def execute(self, scope):
+        self.expr.evaluate(scope)
+
 class Lookup(Expression):
     def __init__(self, name, *args, **kwargs):
         super(Lookup, self).__init__(*args, **kwargs)
