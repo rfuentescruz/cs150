@@ -176,7 +176,7 @@ def p_expression_index(p):
 @inject_production
 def p_expression_atom(p):
     '''expression : atom
-                  | "[" atom_list "]"'''
+                  | "[" list "]"'''
     if len(p) > 2:
         p[0] = p[2]
     else:
@@ -224,9 +224,9 @@ def p_expression_group(p):
     p[0] = p[2]
 
 @inject_production
-def p_atom_list(p):
-    '''atom_list : atom
-                 | atom_list ',' atom'''
+def p_list(p):
+    '''list : expression
+            | list ',' expression'''
     if len(p) > 2:
         p[1].items.append(p[3])
         p[0] = p[1]
