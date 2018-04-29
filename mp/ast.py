@@ -382,16 +382,16 @@ class Index(Expression):
 
         index = self.index.evaluate(scope)
         if not isinstance(index, int):
-            raise LexicalError(
-                p=self.p,
-                message='Invalid index expression',
+            raise RuntimeError(
+                node=self,
+                message='Invalid index expression: "%s"' % index,
                 index=3
             )
 
         if index < 0:
             raise RuntimeError(
-                p=self.p,
-                message='Negative indexes not supported',
+                node=self,
+                message='Negative indexes not supported: %d' % index,
                 index=3
             )
 

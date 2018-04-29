@@ -1,0 +1,31 @@
+a = [0,1,2,3,4,5,6,7,8,9,10];
+
+function search(a, target) {
+    min = 0;
+    max = len a - 1;
+
+    while (min <= max) {
+        mid = min + ((max - min) // 2);
+
+        if (a[mid] == target) {
+            return mid;
+        } else if (a[mid] > target) {
+            max = mid - 1;
+        } else {
+            min = mid + 1;
+        };
+    };
+
+    return -1;
+};
+print search(a, 1);
+print search(a, 2);
+print search(a, 3);
+print search(a, 4);
+print search(a, 5);
+print search(a, 6);
+print search(a, 7);
+print search(a, 8);
+print search(a, 9);
+print search(a, 10);
+print search(a, 11);

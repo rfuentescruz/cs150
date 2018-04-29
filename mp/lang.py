@@ -23,7 +23,6 @@ tokens = [
     'TRUE', 'FALSE',
     'FLOAT', 'INTEGER',
     'NAME', 'STRING',
-    'NEWLINE',
     'OP_FLOOR_DIV', 'OP_EQ', 'OP_NEQ', 'OP_GTEQ', 'OP_LTEQ',
 ] + list(reserved.values())
 
