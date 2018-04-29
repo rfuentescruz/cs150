@@ -11,5 +11,3 @@ function moveDisk(from, to) {
 };
 
 moveTower(3, "A", "B", "C");
-a = [1, 2];
-print len a;
