@@ -57,6 +57,8 @@ def t_INTEGER(t):
 
 
 def t_STRING(t):
+    # A set of characters that starts and ends with a double quote that is not
+    # preceded by a backslash that can span multiple lines
     r'(?x)(?<!\\)".*?(?<!\\)"'
     t.value = t.value[1:-1].decode("string-escape")
     return t
@@ -100,6 +102,13 @@ def t_error(t):
 lexer = lex.lex()
 
 def inject_production(f):
+    '''Wrapper to make sure to inject the YACC production into the AST Node
+
+    A convenience wrapper that allows you to automatically inject the YACC
+    production when the grammar rule returns an AST node. These YACC productions
+    are useful when printing error messages since they contain the parsed
+    code.
+    '''
     @functools.wraps(f)
     def wrapper(p):
         f(p)
@@ -304,6 +313,8 @@ def find_column(input, lexpos):
 
 
 def print_error(error, message, line_number, pos):
+    '''Print the error with a context on where it happened'''
+
     lines = source.split('\n')
     print "%s at line %d: %s" % (error, line_number, message)
     print " %s" % lines[line_number - 1]
@@ -338,14 +349,17 @@ def get_line(prompt):
 
 def main():
     global source
+    # Try to open file as input when provided as command line argument
     if len(sys.argv) >= 2:
         with open(sys.argv[1]) as source_file:
             source = source_file.read()
             parse(source)
+    # Run a REPL session
     else:
         line = ''
         while True:
             line = get_line('foo > ')
+            # Block bodies must be evaluated as a whole so we need to collect.
             if line.strip().endswith('{'):
                 while True:
                     _line = get_line('... > ')

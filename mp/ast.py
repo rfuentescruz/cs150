@@ -58,6 +58,14 @@ class RuntimeError(Exception):
 
 
 class Scope(object):
+    '''Container for variable bindings in a given scope
+
+    These scope objects are dictionary-like objects that contains the name and
+    value bindings for a variable in their scope. Scopes have a hierarchy that
+    allows a lookup to fallback to the parent scope when the value cannot be
+    found in the current scope but provide a Copy-on-Write method that will
+    override the variable in the current scope only, allowing recursion.
+    '''
     def __init__(self, parent=None):
         self.names = {}
         self.parent = parent
@@ -85,6 +93,7 @@ root_scope = Scope()
 
 
 class Node(object):
+    '''Base AST node'''
     def __init__(self, p=None, children=None, parent=None, scope=None):
         self.p = p
 
@@ -99,11 +108,20 @@ class Node(object):
 
 
 class Statement(Node):
+    '''Statement AST node
+
+    These nodes execute some procedure without and do not return a value.
+    '''
     def execute(self, scope=root_scope):
         pass
 
 
 class Expression(Node):
+    '''Expression AST node
+
+    These nodes are evaluated / executed and are expected to return a value
+    that can be used or chained with other expressions as well.
+    '''
     def evaluate(self, scope):
         return None
 
@@ -117,12 +135,16 @@ class StatementList(Node):
                     message='Expected a statement, got %s' % (stmt.__class__)
                 )
             r = stmt.execute(scope)
-
+            # Return statements should immediately halt execution or if the
+            # current scope signals that a return has happened in any of the
+            # nested statement lists within the scope (i.e. loop bodies inside
+            # functions).
             if isinstance(stmt, Return) or 'return' in scope:
                 return r
 
 
 class Assign(Statement):
+    '''Assign the value of an expression to a variable `name`'''
     def __init__(self, name, expr, *args, **kwargs):
         super(Assign, self).__init__(*args, **kwargs)
         self.name = name
@@ -139,8 +161,11 @@ class Assign(Statement):
         scope[self.name] = self.expr.evaluate(scope)
 
 class IndexAssign(Statement):
+    '''Assign the value of an expression to an array `ref` at index `index`'''
     def __init__(self, ref, index, value, *args, **kwargs):
         super(IndexAssign, self).__init__(*args, **kwargs)
+        # References can be expressions so we can access indeces like this
+        # `(array_a + array_b)[2]`
         if not isinstance(ref, Expression):
             raise LexicalError(
                 p=self.p,
@@ -149,6 +174,7 @@ class IndexAssign(Statement):
             )
         self.ref = ref
 
+        # Indeces can be expressions too
         if not isinstance(index, Expression):
             raise LexicalError(
                 p=self.p,
@@ -191,6 +217,7 @@ class IndexAssign(Statement):
 
 
 class Print(Statement):
+    '''Print the value of an expression'''
     def __init__(self, expr, *args, **kwargs):
         super(Print, self).__init__(*args, **kwargs)
         if not isinstance(expr, Expression):
@@ -207,6 +234,7 @@ class Print(Statement):
 
 
 class ConditionalBranch(Node):
+    '''Defines a branch in a conditional expression (`if`, `else if`) and its body (`statements`)'''
     def __init__(self, expr, statements=None, *args, **kwargs):
         super(ConditionalBranch, self).__init__(*args, **kwargs)
         if expr and not isinstance(expr, Expression):
@@ -228,6 +256,7 @@ class ConditionalBranch(Node):
 
 
 class Conditional(Statement):
+    '''A conditional statement composed of one or more branches (`if`, `else if`) and fallback (`else`)'''
     def __init__(self, fallback=None, *args, **kwargs):
         super(Conditional, self).__init__(*args, **kwargs)
         if fallback and not isinstance(fallback, StatementList):
@@ -240,16 +269,21 @@ class Conditional(Statement):
         self.fallback = fallback
 
     def execute(self, scope=root_scope):
+        # Children of a conditional node are conditional branches (if, else-if)
+        # that we evaluate to determine which branch to execute
         for branch in self.children:
             if branch.expr.evaluate(scope):
                 branch.statements.execute(scope)
+                # do not evaluate other branches anymore
                 return
 
+        # If we reach this, then couldn't find a matching branch, execute `else`
         if self.fallback:
             self.fallback.execute(scope)
 
 
 class Loop(Statement):
+    '''Execute a `body` of statements repeatedly until `expr` is false'''
     def __init__(self, expr, body, *args, **kwargs):
         super(Loop, self).__init__(*args, **kwargs)
         if not isinstance(expr, Expression):
@@ -270,21 +304,28 @@ class Loop(Statement):
         self.body = body
 
     def execute(self, scope=root_scope):
+        # Loop until the conditional for the loop is `false` or a `return` was
+        # signalled from any of the nested code blocks
         while self.expr.evaluate(scope) and 'return' not in scope:
             self.body.execute(scope)
 
 
 class Return(Statement):
+    '''Return control to the previous caller'''
     def __init__(self, expr, *args, **kwargs):
         super(Return, self).__init__(*args, **kwargs)
         self.expr = expr
 
     def execute(self, scope):
+        # Signal the current scope that we need to return control to the caller
+        # this signal will be checked by loop bodies to make sure that they
+        # do not continue processing the loop and return instead.
         scope['return'] = self.expr.evaluate(scope)
         return scope['return']
 
 
 class Function(Statement):
+    '''Define a function `name` with an expected list of arguments `arg_list`'''
     def __init__(self, name, arg_list, body, *args, **kwargs):
         super(Function, self).__init__(*args, **kwargs)
         self.name = name
@@ -292,6 +333,7 @@ class Function(Statement):
         self.body = body
 
     def execute(self, scope):
+        # Define the function in scope
         if self.name in scope:
             raise RuntimeError(
                 node=self.p,
@@ -302,6 +344,12 @@ class Function(Statement):
 
 
 class BareExpression(Statement):
+    '''Execute an expression as-is
+
+    This doesn't look like all that use full because this implies that a
+    statement `1 + 2` is possible without assigning it to a variable. But this
+    allows us to execute functions and not care about the return value.
+    '''
     def __init__(self, expr, *args, **kwargs):
         super(BareExpression, self).__init__(*args, **kwargs)
         self.expr = expr
@@ -310,18 +358,26 @@ class BareExpression(Statement):
         self.expr.evaluate(scope)
 
 class FunctionCall(Expression):
+    '''Execute a function named `name` with the arguments `call_args`'''
     def __init__(self, name, call_args, *args, **kwargs):
         self.name = name
         self.call_args = call_args
 
     def evaluate(self, scope):
+        # Get the function from the current scope
         f = scope[self.name]
+
+        # Create a new scope based on the current scope
         new_scope = Scope(parent=scope)
         for (i, arg) in enumerate(self.call_args.items):
+            # Inject the argument values in the new scope of the function
             new_scope[f.arg_list[i]] = arg.evaluate(scope)
 
+        # Execute the function body with the new scope
         r = f.body.execute(new_scope)
 
+        # If the function returned something, use the return value as the
+        # value of this expression
         if 'return' in new_scope:
             r = new_scope['return']
             del new_scope['return']
@@ -329,6 +385,7 @@ class FunctionCall(Expression):
         return r
 
 class Lookup(Expression):
+    '''Lookup a name from the current scope and return its value'''
     def __init__(self, name, *args, **kwargs):
         super(Lookup, self).__init__(*args, **kwargs)
         self.name = name
@@ -360,6 +417,7 @@ class List(Expression):
 
 
 class Index(Expression):
+    '''Return the value of the item in an array `target` at index `index`'''
     def __init__(self, target, index, *args, **kwargs):
         super(Index, self).__init__(*args, **kwargs)
         if not isinstance(index, Expression):
@@ -406,6 +464,7 @@ class Index(Expression):
 
 
 class BinaryOp(Expression):
+    '''Operators representing an operation against two expressions `left` and `right`'''
     OPERATORS = []
 
     def __init__(self, left, right, op, *args, **kwargs):
@@ -444,6 +503,9 @@ class ArithmeticOp(BinaryOp):
         l = self.left.evaluate(scope)
         r = self.right.evaluate(scope)
 
+        # If the operation is not addition, then only allow integers and
+        # floating point numbers. Else addition is ok for list and strings as
+        # concatenation.
         if not isinstance(l, (int, float)) and self.op != '+':
             raise RuntimeError(
                 node=self.left,
@@ -485,6 +547,7 @@ class ComparisonOp(BinaryOp):
                 message='Unable to compare non-matching types'
             )
 
+        # Only allow equality comparison for lists
         if self.op not in ['==', '!=']:
             if isinstance(l, list) or isinstance(r, list):
                 raise RuntimeError(
@@ -511,6 +574,8 @@ class LogicalOp(BinaryOp):
 
     def evaluate(self, scope):
         l = self.left.evaluate(scope)
+
+        # Short-circuit evaluation
         if self.op == 'and' and not l:
             return False
         elif self.op == 'or' and l:
@@ -525,6 +590,7 @@ class LogicalOp(BinaryOp):
 
 
 class UnaryOp(Expression):
+    '''Represents operations for a single value'''
     OPERATORS = ['-', 'not']
 
     def __init__(self, expr, op, *args, **kwargs):
@@ -553,6 +619,7 @@ class UnaryOp(Expression):
         if self.op == 'not':
             return bool(not expr)
         elif self.op == '-':
+            # Only allow negation for integers and floats
             if not isinstance(expr, (int, float)):
                 raise RuntimeError(
                     node=self.expr,
@@ -563,6 +630,7 @@ class UnaryOp(Expression):
 
 
 class Length(Expression):
+    '''Get the length of list or string'''
     def __init__(self, array, *args, **kwargs):
         super(Length, self).__init__(*args, **kwargs)
         if not isinstance(array, Expression):
