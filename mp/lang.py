@@ -357,20 +357,24 @@ def main():
     # Run a REPL session
     else:
         line = ''
-        while True:
-            line = get_line('foo > ')
-            # Block bodies must be evaluated as a whole so we need to collect.
-            if line.strip().endswith('{'):
-                while True:
-                    _line = get_line('... > ')
-                    line += _line
-                    if _line.strip().endswith('};'):
-                        break
+        try:
+            while True:
+                line = get_line('foo > ')
+                # Block bodies must be evaluated as a whole so we need to collect.
+                if line.strip().endswith('{'):
+                    while True:
+                        _line = get_line('... > ')
+                        line += _line
+                        if _line.strip().endswith('};'):
+                            break
 
-            source = line
-            r = parse(line)
-            if r is not None:
-                print r
+                source = line
+                r = parse(line)
+                if r is not None:
+                    print r
+        except (EOFError, KeyboardInterrupt):
+            print "Exit"
+
 
 
 if __name__ == '__main__':
