@@ -520,10 +520,25 @@ class ArithmeticOp(BinaryOp):
             elif self.op == '*':
                 return l * r
             elif self.op == '/':
+                if r == 0:
+                    raise RuntimeError(
+                        node=self.left,
+                        message='Division by zero'
+                    )
                 return l / r
             elif self.op == '//':
+                if r == 0:
+                    raise RuntimeError(
+                        node=self.left,
+                        message='Division by zero'
+                    )
                 return l // r
             elif self.op == '%':
+                if r == 0:
+                    raise RuntimeError(
+                        node=self.left,
+                        message='Division by zero'
+                    )
                 return l % r
             elif self.op == '^':
                 return l ** r
