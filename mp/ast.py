@@ -564,7 +564,7 @@ class ComparisonOp(BinaryOp):
 
         # Only allow equality comparison for lists
         if self.op not in ['==', '!=']:
-            if isinstance(l, list) or isinstance(r, list):
+            if isinstance(l, (list, str, bool)) or isinstance(r, (list, str, bool)):
                 raise RuntimeError(
                     node=self.left,
                     message='Unsupported operation "%s" for type' % self.op
