@@ -506,7 +506,7 @@ class ArithmeticOp(BinaryOp):
         # If the operation is not addition, then only allow integers and
         # floating point numbers. Else addition is ok for list and strings as
         # concatenation.
-        if not isinstance(l, (int, float)) and self.op != '+':
+        if not isinstance(l, (int, long, float)) and self.op != '+':
             raise RuntimeError(
                 node=self.left,
                 message='Unsupported operation "%s" for type' % self.op
@@ -556,7 +556,10 @@ class ComparisonOp(BinaryOp):
         l = self.left.evaluate(scope)
         r = self.right.evaluate(scope)
 
-        if not isinstance(l, type(r)):
+        if (
+            not isinstance(l, type(r)) and
+            (not isinstance(r, (int, float, long)) or not isinstance(l, (int, float, long)))
+        ):
             raise RuntimeError(
                 node=self.left,
                 message='Unable to compare non-matching types'
@@ -635,7 +638,7 @@ class UnaryOp(Expression):
             return bool(not expr)
         elif self.op == '-':
             # Only allow negation for integers and floats
-            if not isinstance(expr, (int, float)):
+            if not isinstance(expr, (int, long, float)):
                 raise RuntimeError(
                     node=self.expr,
                     message='Unsupported operation "%s" for type' % self.op
