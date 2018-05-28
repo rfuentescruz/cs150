@@ -369,6 +369,14 @@ class FunctionCall(Expression):
 
         # Create a new scope based on the current scope
         new_scope = Scope(parent=scope)
+        if len(self.call_args.items) != len(f.arg_list):
+            raise RuntimeError(
+                node=self,
+                message='%s expects %d argument(s), got %d' % (
+                    self.name, len(f.arg_list), len(self.call_args.items)
+                ),
+            )
+
         for (i, arg) in enumerate(self.call_args.items):
             # Inject the argument values in the new scope of the function
             new_scope[f.arg_list[i]] = arg.evaluate(scope)
