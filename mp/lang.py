@@ -178,8 +178,14 @@ def p_statement_loop(p):
 
 @inject_production
 def p_function_definition(p):
-    '''statement : FUNCTION NAME "(" arg_list ")" "{" statement_list "}"'''
-    p[0] = Function(name=p[2], arg_list=p[4], body=p[7])
+    '''statement : FUNCTION NAME "(" ")" "{" statement_list "}"
+                 | FUNCTION NAME "(" arg_list ")" "{" statement_list "}"
+    '''
+    if len(p) > 8:
+        p[0] = Function(name=p[2], arg_list=p[4], body=p[7])
+    else:
+        p[0] = Function(name=p[2], arg_list=[], body=p[6])
+
 
 @inject_production
 def p_return(p):
@@ -207,8 +213,15 @@ def p_bare_expression(p):
 
 @inject_production
 def p_function_call(p):
-    '''expression : NAME "(" list ")"'''
-    p[0] = FunctionCall(name=p[1], call_args=p[3])
+    '''expression :  NAME "(" ")"
+                  | NAME "(" list ")"
+    '''
+    if len(p) > 4:
+        call_args = p[3]
+    else:
+        call_args = List(items=[])
+
+    p[0] = FunctionCall(name=p[1], call_args=call_args)
 
 @inject_production
 def p_expression_index(p):
