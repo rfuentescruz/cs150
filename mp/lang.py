@@ -372,7 +372,7 @@ def main():
         line = ''
         try:
             while True:
-                line = get_line('foo > ')
+                line = get_line('jt  > ')
                 # Block bodies must be evaluated as a whole so we need to collect.
                 if line.strip().endswith('{'):
                     while True:
